@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b5d">
+<title>MC Immigration Procedures | Práctica de Ciudadanía</title>
+<style>
+:root{--navy:#123b5d;--blue:#1769aa;--gold:#e8b44d;--bg:#f4f7fb;--ink:#172536;--muted:#5d6b7a;--white:#fff;--green:#18794e;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+header{background:linear-gradient(135deg,#123b5d,#1769aa);color:white;padding:24px 18px 22px;text-align:center}
+.logo{display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--gold);border-radius:14px;width:58px;height:58px;font-size:22px;font-weight:800;letter-spacing:1px;margin-bottom:8px}
+header h1{font-size:23px;margin:0 0 5px}header p{margin:0;color:#e8f2fb;font-size:14px}
+main{max-width:850px;margin:18px auto;padding:0 13px 36px}
+.notice{background:#fff8e7;border:1px solid #f1d58b;border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:14px}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-bottom:14px}
+button,select,input{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:12px 14px;font-weight:650}
+.tab{background:#e3eaf2;color:var(--navy)}.tab.active{background:var(--navy);color:white}
+.panel{background:white;border-radius:16px;padding:18px;box-shadow:0 3px 15px #153b5d12;margin-bottom:14px}
+h2{font-size:20px;margin:0 0 12px;color:var(--navy)}h3{font-size:16px;margin:0 0 8px}
+label{display:block;font-size:14px;font-weight:650;margin:12px 0 5px}
+select,input{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:11px;background:white;color:var(--ink)}
+.primary{background:var(--blue);color:white}.secondary{background:#e8eef5;color:var(--navy)}.gold{background:var(--gold);color:#302407}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions button{flex:1;min-width:120px}
+.question{font-size:21px;font-weight:750;margin:10px 0}.answer{background:#eef6ff;border-left:4px solid var(--blue);padding:12px;border-radius:8px;margin:12px 0;display:none}
+.small{font-size:13px;color:var(--muted)}.progress{height:7px;background:#e7edf4;border-radius:20px;overflow:hidden;margin:10px 0}.progress div{height:100%;width:0;background:var(--gold);transition:width .2s}
+.pill{display:inline-block;background:#eaf2fa;color:var(--navy);border-radius:20px;padding:4px 9px;font-size:12px;font-weight:700}
+.hidden{display:none!important}.status{font-weight:700;margin-top:10px}.correct{color:var(--green)}.wrong{color:var(--red)}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
+@media(min-width:600px){.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}header h1{font-size:28px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">MC</div>
+  <h1>MC Immigration Procedures</h1>
+  <p>Preparación para la ciudadanía estadounidense · Español e inglés</p>
+</header>
+<main>
+  <div class="notice"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Esta primera versión incluye preguntas de muestra; no es todavía el banco oficial completo.</div>
+  <div class="tabs">
+    <button class="tab active" data-view="civics">Cívica</button>
+    <button class="tab" data-view="interview">Entrevista N-400</button>
+    <button class="tab" data-view="english">Inglés práctico</button>
+    <button class="tab" data-view="writing">Lectura y escritura</button>
+  </div>
+  <section id="civics" class="panel">
+    <h2>Práctica de educación cívica</h2>
+    <label for="version">Versión de práctica</label>
+    <select id="version"><option value="2025">Examen 2025 (muestra)</option><option value="2008">Examen 2008 (muestra)</option></select>
+    <label for="lang">Idioma de apoyo</label>
+    <select id="lang"><option value="both">Inglés y español</option><option value="en">Solo inglés</option><option value="es">Solo español</option></select>
+    <div class="progress"><div id="bar"></div></div>
+    <div class="small" id="counter">Pregunta 1</div>
+    <div class="question" id="q"></div>
+    <div id="translation" class="small"></div>
+    <div id="answer" class="answer"></div>
+    <div class="actions">
+      <button class="secondary" id="listen">🔊 Escuchar pregunta</button>
+      <button class="secondary" id="show">Ver respuesta</button>
+      <button class="primary" id="next">Siguiente →</button>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="prev">← Anterior</button>
+      <button class="gold" id="shuffle">Mezclar preguntas</button>
+    </div>
+  </section>
+  <section id="interview" class="panel hidden">
+    <h2>Simulador de entrevista N-400</h2>
+    <p class="small">Practica contestar en inglés. No escribas números de Seguro Social ni otros datos sensibles.</p>
+    <div class="progress"><div id="ibar"></div></div>
+    <div class="small" id="icounter">Pregunta 1</div>
+    <div class="question" id="iq"></div>
+    <div id="ihint" class="small"></div>
+    <label for="ianswer">Tu respuesta (opcional)</label>
+    <input id="ianswer" placeholder="Escribe tu respuesta en inglés…">
+    <div class="actions">
+      <button class="secondary" id="ilisten">🔊 Escuchar</button>
+      <button class="secondary" id="ihintbtn">Mostrar consejo</button>
+      <button class="primary" id="inext">Siguiente →</button>
+    </div>
+    <div class="answer" id="itip"></div>
+  </section>
+  <section id="english" class="panel hidden">
+    <h2>Inglés práctico: escucha y habla</h2>
+    <p>Escucha la frase y repítela en voz alta. Si tu navegador lo permite, toca el micrófono para revisar lo que dices.</p>
+    <div class="question" id="phrase">My name is Marina.</div>
+    <div class="small" id="phraseEs">Me llamo Marina.</div>
+    <div class="actions">
+      <button class="primary" id="phraseListen">🔊 Escuchar frase</button>
+      <button class="secondary" id="mic">🎙️ Practicar con micrófono</button>
+      <button class="secondary" id="phraseNext">Otra frase →</button>
+    </div>
+    <div id="speechResult" class="answer" style="display:block">Tu práctica aparecerá aquí cuando uses el micrófono.</div>
+    <p class="small">El reconocimiento de voz depende del navegador y puede requerir permiso de micrófono. En iPhone, abre la página en Safari y permite el acceso cuando se solicite.</p>
+  </section>
+  <section id="writing" class="panel hidden">
+    <h2>Lectura y escritura</h2>
+    <p class="small">Lee la frase en voz alta y practica escribirla exactamente como aparece.</p>
+    <div class="question" id="writePrompt">The President lives in the White House.</div>
+    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar frase</button><button class="secondary" id="writeNew">Otra frase →</button></div>
+    <label for="written">Escribe la frase en inglés</label>
+    <input id="written" placeholder="Type the sentence here">
+    <div class="actions"><button class="primary" id="checkWriting">Revisar respuesta</button></div>
+    <div id="writeFeedback" class="status"></div>
+  </section>
+  <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
+</main>
+<script>
+const banks={
+2025:[
+["What is the form of government of the United States?","¿Cuál es la forma de gobierno de Estados Unidos?","Republic; constitution-based federal republic; representative democracy.","República; república federal basada en la Constitución; democracia representativa."],
+["What is the supreme law of the land?","¿Cuál es la ley suprema del país?","The Constitution.","La Constitución."],
+["Name one thing the U.S. Constitution does.","Menciona una cosa que hace la Constitución.","Forms the government; defines the government; protects basic rights of Americans.","Establece el gobierno; define el gobierno; protege los derechos básicos."],
+["The idea of self-government is in the first three words of the Constitution. What are these words?","La idea del autogobierno está en las primeras tres palabras de la Constitución. ¿Cuáles son?","We the People.","Nosotros, el Pueblo."],
+["How are changes made to the U.S. Constitution?","¿Cómo se hacen cambios a la Constitución?","Amendments.","Mediante enmiendas."],
+["What does the Bill of Rights protect?","¿Qué protege la Declaración de Derechos?","The basic rights of Americans; the basic rights of people living in the United States.","Los derechos básicos de los estadounidenses y de las personas que viven en EE. UU."],
+["How many amendments does the U.S. Constitution have?","¿Cuántas enmiendas tiene la Constitución?","Twenty-seven (27).","Veintisiete (27)."],
+["Why is the Declaration of Independence important?","¿Por qué es importante la Declaración de Independencia?","It says America is free from British control; it says all people are created equal.","Declara que Estados Unidos es libre del control británico; dice que todas las personas son iguales."],
+["What founding document said the American colonies were free from Britain?","¿Qué documento fundacional declaró libres de Gran Bretaña a las colonias?","The Declaration of Independence.","La Declaración de Independencia."],
+["Name two important ideas from the Declaration of Independence and the U.S. Constitution.","Menciona dos ideas importantes de la Declaración de Independencia y la Constitución.","Equality; liberty; social contract; natural rights; limited government; self-government.","Igualdad; libertad; contrato social; derechos naturales; gobierno limitado; autogobierno."],
+["What is the economic system in the United States?","¿Cuál es el sistema económico de Estados Unidos?","Capitalism; market economy.","Capitalismo; economía de mercado."],
+["What is the rule of law?","¿Qué significa el estado de derecho?","Everyone must follow the law; leaders must obey the law; government must obey the law.","Todos deben cumplir la ley; los líderes y el gobierno deben obedecerla."],
+["Name one branch or part of the government.","Nombra una rama o parte del gobierno.","Congress; the President; the courts.","El Congreso; el presidente; los tribunales."],
+["What stops one branch of government from becoming too powerful?","¿Qué impide que una rama del gobierno tenga demasiado poder?","Checks and balances; separation of powers.","Controles y equilibrios; separación de poderes."],
+["Who is in charge of the executive branch?","¿Quién está a cargo del poder ejecutivo?","The President.","El presidente."],
+["Who makes federal laws?","¿Quién crea las leyes federales?","Congress; the Senate and House of Representatives.","El Congreso; el Senado y la Cámara de Representantes."],
+["What are the two parts of the U.S. Congress?","¿Cuáles son las dos partes del Congreso?","The Senate and House of Representatives.","El Senado y la Cámara de Representantes."],
+["How many U.S. senators are there?","¿Cuántos senadores hay en Estados Unidos?","One hundred (100).","Cien (100)."],
+["We elect a U.S. senator for how many years?","¿Por cuántos años elegimos a un senador?","Six (6).","Seis (6)."],
+["Name your U.S. representative.","Nombra a tu representante federal.","Answers vary by state and district.","La respuesta depende del estado y distrito."],
+["Who does a U.S. senator represent?","¿A quién representa un senador?","All people of the state.","A todas las personas del estado."],
+["Who signs bills to become laws?","¿Quién firma los proyectos para convertirlos en leyes?","The President.","El presidente."],
+["Who vetoes bills?","¿Quién veta los proyectos de ley?","The President.","El presidente."],
+["What does the judicial branch do?","¿Qué hace el poder judicial?","Reviews laws; explains laws; resolves disputes; decides if a law goes against the Constitution.","Revisa y explica leyes; resuelve disputas; decide si una ley contradice la Constitución."],
+["What is the highest court in the United States?","¿Cuál es el tribunal más alto de Estados Unidos?","The Supreme Court.","La Corte Suprema."],
+["How many justices are on the Supreme Court?","¿Cuántos jueces hay en la Corte Suprema?","Nine (9).","Nueve (9)."],
+["What is one power of the federal government?","Menciona un poder del gobierno federal.","To print money; declare war; create an army; make treaties.","Imprimir dinero; declarar la guerra; crear un ejército; hacer tratados."],
+["What is one power of the states?","Menciona un poder de los estados.","Provide schooling and education; provide protection (police); provide safety (fire departments); give a driver's license; approve zoning and land use.","Ofrecer educación; policía; bomberos; licencias de conducir; regular el uso del suelo."],
+["Who is the Governor of your state now?","¿Quién es actualmente el gobernador de tu estado?","Answers vary by state.","La respuesta depende del estado."],
+["What is the capital of your state?","¿Cuál es la capital de tu estado?","Answers vary by state.","La respuesta depende del estado."],
+["What are the two major political parties in the United States?","¿Cuáles son los dos principales partidos políticos?","Democratic and Republican.","Demócrata y Republicano."],
+["What is the political party of the President now?","¿Cuál es el partido político del presidente actual?","Check the current President's party before the interview.","Verifica el partido del presidente actual antes de la entrevista."],
+["What is the name of the Speaker of the House of Representatives now?","¿Cómo se llama actualmente el presidente de la Cámara de Representantes?","Check the current officeholder before the interview.","Verifica quién ocupa actualmente el cargo."],
+["There are four amendments to the Constitution about who can vote. Describe one of them.","Hay cuatro enmiendas sobre quién puede votar. Describe una.","Citizens 18 and older can vote; no poll tax; any citizen can vote regardless of sex or race.","Los ciudadanos de 18 años o más pueden votar; no hay impuesto electoral; no se puede discriminar por sexo o raza."],
+["What is one responsibility that is only for United States citizens?","¿Cuál es una responsabilidad exclusiva de los ciudadanos estadounidenses?","Serve on a jury; vote in a federal election.","Servir en un jurado; votar en elecciones federales."],
+["Name one right only for United States citizens.","Nombra un derecho exclusivo de los ciudadanos estadounidenses.","Vote in a federal election; run for federal office.","Votar en elecciones federales; postularse a un cargo federal."],
+["What are two rights of everyone living in the United States?","¿Cuáles son dos derechos de todas las personas que viven en Estados Unidos?","Freedom of expression; freedom of speech; freedom of assembly; freedom to petition the government; freedom of religion; right to bear arms.","Libertad de expresión, reunión, petición al gobierno, religión o derecho a portar armas."],
+["What do we show loyalty to when we say the Pledge of Allegiance?","¿A qué mostramos lealtad al decir el Juramento a la Bandera?","The United States; the flag.","A Estados Unidos; a la bandera."],
+["What is one promise you make when you become a United States citizen?","¿Cuál es una promesa al convertirse en ciudadano?","Give up loyalty to other countries; defend the Constitution and laws; obey the laws; serve in the military if needed; serve the nation if needed.","Renunciar a lealtades a otros países; defender la Constitución; obedecer las leyes; servir si es necesario."],
+["How old do citizens have to be to vote for President?","¿Qué edad deben tener los ciudadanos para votar por presidente?","Eighteen (18) and older.","Dieciocho (18) años o más."],
+["What are two ways that Americans can participate in their democracy?","¿Cuáles son dos formas de participar en la democracia?","Vote; join a political party; help with a campaign; contact elected officials; run for office; join a civic group.","Votar; unirse a un partido; ayudar en campañas; contactar representantes; postularse; participar en grupos cívicos."],
+["When is the last day you can send in federal income tax forms?","¿Cuál es el último día para presentar la declaración federal de impuestos?","April 15.","15 de abril."],
+["When must all men register for the Selective Service?","¿Cuándo deben registrarse los hombres en el Servicio Selectivo?","At age eighteen (18); between 18 and 26.","A los 18 años; entre los 18 y 26 años."],
+["What is one reason colonists came to America?","¿Por qué vinieron los colonos a América?","Freedom; political liberty; religious freedom; economic opportunity; to practice their religion; to escape persecution.","Libertad; libertad política o religiosa; oportunidad económica; escapar persecución."],
+["Who lived in America before the Europeans arrived?","¿Quién vivía en América antes de la llegada de los europeos?","American Indians; Native Americans.","Indígenas americanos; pueblos nativos."],
+["What group of people was taken and sold as slaves?","¿Qué grupo fue llevado y vendido como esclavo?","Africans; people from Africa.","Africanos; personas de África."],
+["Why did the colonists fight the British?","¿Por qué lucharon los colonos contra los británicos?","Because of high taxes; because the British army stayed in their houses; because they wanted self-government.","Por impuestos altos; por la presencia del ejército británico; querían autogobierno."],
+["Who wrote the Declaration of Independence?","¿Quién escribió la Declaración de Independencia?","Thomas Jefferson.","Thomas Jefferson."],
+["When was the Declaration of Independence adopted?","¿Cuándo se adoptó la Declaración de Independencia?","July 4, 1776.","4 de julio de 1776."],
+["There were 13 original states. Name three.","Había 13 estados originales. Nombra tres.","New Hampshire, Massachusetts, Rhode Island, Connecticut, New York, New Jersey, Pennsylvania, Delaware, Maryland, Virginia, North Carolina, South Carolina, Georgia.","Cualquiera de los 13 estados originales."],
+["What happened at the Constitutional Convention?","¿Qué ocurrió en la Convención Constitucional?","The Constitution was written; the Founding Fathers wrote the Constitution.","Se redactó la Constitución."],
+["When was the Constitution written?","¿Cuándo se escribió la Constitución?","1787.","En 1787."],
+["The Federalist Papers supported the passage of the U.S. Constitution. Name one of the writers.","Los Artículos Federalistas apoyaron la Constitución. Nombra un autor.","James Madison; Alexander Hamilton; John Jay; Publius.","James Madison; Alexander Hamilton; John Jay; Publius."],
+["What is one thing Benjamin Franklin is famous for?","¿Por qué es famoso Benjamin Franklin?","U.S. diplomat; oldest member of the Constitutional Convention; first Postmaster General; writer of Poor Richard's Almanac; started the first free libraries.","Diplomático; miembro mayor de la Convención; primer director de correos; escritor; fundó bibliotecas gratuitas."],
+["Who is the 'Father of Our Country'?","¿Quién es el 'Padre de nuestra nación'?","George Washington.","George Washington."],
+["Who was the first President?","¿Quién fue el primer presidente?","George Washington.","George Washington."],
+["What territory did the United States buy from France in 1803?","¿Qué territorio compró Estados Unidos a Francia en 1803?","The Louisiana Territory; Louisiana.","El territorio de Luisiana."],
+["Name one war fought by the United States in the 1800s.","Nombra una guerra en la que luchó EE. UU. en el siglo XIX.","War of 1812; Mexican-American War; Civil War; Spanish-American War.","Guerra de 1812; guerra mexicano-estadounidense; Guerra Civil; guerra hispano-estadounidense."],
+["Name the U.S. war between the North and the South.","Nombra la guerra entre el Norte y el Sur.","The Civil War; the War between the States.","La Guerra Civil."],
+["Name one problem that led to the Civil War.","Nombra un problema que condujo a la Guerra Civil.","Slavery; economic reasons; states' rights.","Esclavitud; razones económicas; derechos de los estados."],
+["What was one important thing that Abraham Lincoln did?","¿Qué hizo de importante Abraham Lincoln?","Freed the slaves; saved the Union; led the United States during the Civil War.","Liberó a los esclavizados; preservó la Unión; lideró durante la Guerra Civil."],
+["What did the Emancipation Proclamation do?","¿Qué hizo la Proclamación de Emancipación?","Freed the slaves; freed slaves in the Confederacy; freed slaves in Confederate states.","Liberó a las personas esclavizadas en la Confederación."],
+["What did Susan B. Anthony do?","¿Qué hizo Susan B. Anthony?","Fought for women's rights; fought for civil rights.","Luchó por los derechos de las mujeres y los derechos civiles."],
+["Name one war fought by the United States in the 1900s.","Nombra una guerra en la que luchó EE. UU. en el siglo XX.","World War I; World War II; Korean War; Vietnam War; Gulf War.","Primera o Segunda Guerra Mundial; Corea; Vietnam; Guerra del Golfo."],
+["Who was President during World War I?","¿Quién era presidente durante la Primera Guerra Mundial?","Woodrow Wilson.","Woodrow Wilson."],
+["Who was President during the Great Depression and World War II?","¿Quién era presidente durante la Gran Depresión y la Segunda Guerra Mundial?","Franklin Roosevelt.","Franklin Roosevelt."],
+["Who did the United States fight in World War II?","¿Contra quién luchó Estados Unidos en la Segunda Guerra Mundial?","Japan, Germany, and Italy.","Japón, Alemania e Italia."],
+["Before he was President, Eisenhower was a general. What war was he in?","Antes de ser presidente, Eisenhower fue general. ¿En qué guerra participó?","World War II.","La Segunda Guerra Mundial."],
+["During the Cold War, what was the main concern of the United States?","Durante la Guerra Fría, ¿cuál era la principal preocupación de EE. UU.?","Communism.","El comunismo."],
+["What movement tried to end racial discrimination?","¿Qué movimiento intentó terminar con la discriminación racial?","The civil rights movement.","El movimiento por los derechos civiles."],
+["What did Martin Luther King, Jr. do?","¿Qué hizo Martin Luther King, Jr.?","Fought for civil rights; worked for equality for all Americans.","Luchó por los derechos civiles y la igualdad."],
+["What major event happened on September 11, 2001, in the United States?","¿Qué ocurrió el 11 de septiembre de 2001?","Terrorists attacked the United States.","Terroristas atacaron Estados Unidos."],
+["Name one American Indian tribe in the United States.","Nombra una tribu indígena de Estados Unidos.","Cherokee; Navajo; Sioux; Chippewa; Choctaw; Pueblo; Apache; Iroquois; Creek; Blackfeet; Seminole; Cheyenne; Arawak; Shawnee; Mohegan; Huron; Oneida; Lakota; Crow; Teton; Hopi; Inuit.","Cualquier tribu indígena reconocida, por ejemplo Cherokee o Navajo."],
+["Name one of the two longest rivers in the United States.","Nombra uno de los dos ríos más largos de Estados Unidos.","Missouri River; Mississippi River.","Río Misuri; río Misisipi."],
+["What ocean is on the West Coast of the United States?","¿Qué océano está en la costa oeste de EE. UU.?","Pacific Ocean.","Océano Pacífico."],
+["What ocean is on the East Coast of the United States?","¿Qué océano está en la costa este de EE. UU.?","Atlantic Ocean.","Océano Atlántico."],
+["Name one U.S. territory.","Nombra un territorio de Estados Unidos.","Puerto Rico; U.S. Virgin Islands; American Samoa; Northern Mariana Islands; Guam.","Puerto Rico; Islas Vírgenes; Samoa Americana; Islas Marianas del Norte; Guam."],
+["Name one state that borders Canada.","Nombra un estado que limita con Canadá.","Many answers, including Alaska, Washington, Idaho, Montana, North Dakota, Minnesota, Michigan, New York, Vermont, Maine.","Hay varias respuestas posibles, como Alaska, Washington, Nueva York o Maine."],
+["Name one state that borders Mexico.","Nombra un estado que limita con México.","California; Arizona; New Mexico; Texas.","California; Arizona; Nuevo México; Texas."],
+["What is the capital of the United States?","¿Cuál es la capital de Estados Unidos?","Washington, D.C.","Washington, D. C."],
+["Where is the Statue of Liberty?","¿Dónde está la Estatua de la Libertad?","New York Harbor; Liberty Island. Also acceptable: New Jersey, near New York City, on the Hudson River.","Puerto de Nueva York; isla de la Libertad. También se acepta Nueva Jersey, cerca de Nueva York, en el río Hudson."],
+["Why does the flag have 13 stripes?","¿Por qué la bandera tiene 13 franjas?","Because there were 13 original colonies.","Porque había 13 colonias originales."],
+["Why does the flag have 50 stars?","¿Por qué la bandera tiene 50 estrellas?","Because there is one star for each state.","Porque hay una estrella por cada estado."],
+["What is the name of the national anthem?","¿Cómo se llama el himno nacional?","The Star-Spangled Banner.","The Star-Spangled Banner."],
+["When do we celebrate Independence Day?","¿Cuándo celebramos el Día de la Independencia?","July 4.","4 de julio."],
+["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Martin Luther King, Jr. Day; Presidents' Day; Memorial Day; Juneteenth; Independence Day; Labor Day; Columbus Day; Veterans Day; Thanksgiving; Christmas.","Año Nuevo; Día de Martin Luther King; Día de los Presidentes; Memorial Day; Juneteenth; Independencia; Día del Trabajo; Acción de Gracias; Navidad, entre otros."]
+],
+2008:[
+["What is the supreme law of the land?","¿Cuál es la ley suprema del país?","The Constitution.","La Constitución."],
+["What does the Constitution do?","¿Qué hace la Constitución?","Sets up the government; defines the government; protects basic rights of Americans.","Establece el gobierno; lo define; protege derechos básicos."],
+["The idea of self-government is in the first three words of the Constitution. What are these words?","¿Cuáles son las primeras tres palabras de la Constitución?","We the People.","Nosotros, el Pueblo."],
+["What is an amendment?","¿Qué es una enmienda?","A change to the Constitution; an addition to the Constitution.","Un cambio o adición a la Constitución."],
+["What do we call the first ten amendments to the Constitution?","¿Cómo llamamos a las primeras diez enmiendas?","The Bill of Rights.","La Declaración de Derechos."],
+["What is one right or freedom from the First Amendment?","Menciona un derecho de la Primera Enmienda.","Speech; religion; assembly; press; petition the government.","Expresión; religión; reunión; prensa; petición al gobierno."],
+["How many amendments does the Constitution have?","¿Cuántas enmiendas tiene la Constitución?","Twenty-seven (27).","Veintisiete (27)."],
+["What did the Declaration of Independence do?","¿Qué hizo la Declaración de Independencia?","Declared independence from Great Britain; announced independence.","Declaró la independencia de Gran Bretaña."],
+["What are two rights in the Declaration of Independence?","¿Cuáles son dos derechos de la Declaración de Independencia?","Life; liberty; pursuit of happiness.","Vida; libertad; búsqueda de la felicidad."],
+["What is freedom of religion?","¿Qué es la libertad de religión?","You can practice any religion, or not practice a religion.","Puedes practicar cualquier religión o ninguna."],
+["What is the economic system in the United States?","¿Cuál es el sistema económico de Estados Unidos?","Capitalist economy; market economy.","Economía capitalista; economía de mercado."],
+["What is the rule of law?","¿Qué significa el estado de derecho?","Everyone must follow the law; leaders must obey the law.","Todos y los líderes deben obedecer la ley."],
+["Name one branch or part of the government.","Nombra una rama del gobierno.","Congress; legislative; President; executive; courts; judicial.","Congreso/legislativo; presidente/ejecutivo; tribunales/judicial."],
+["What keeps one branch of government from becoming too powerful?","¿Qué impide que una rama tenga demasiado poder?","Checks and balances; separation of powers.","Controles y equilibrios; separación de poderes."],
+["Who is in charge of the executive branch?","¿Quién dirige el poder ejecutivo?","The President.","El presidente."],
+["Who makes federal laws?","¿Quién hace las leyes federales?","Congress; Senate and House of Representatives.","El Congreso; Senado y Cámara de Representantes."],
+["What are the two parts of the U.S. Congress?","¿Cuáles son las dos partes del Congreso?","The Senate and House of Representatives.","El Senado y la Cámara de Representantes."],
+["How many U.S. Senators are there?","¿Cuántos senadores hay?","One hundred (100).","Cien (100)."],
+["We elect a U.S. Senator for how many years?","¿Por cuántos años elegimos a un senador?","Six (6).","Seis (6)."],
+["Who is one of your state's U.S. Senators now?","Nombra uno de los senadores de tu estado.","Answers vary by state.","Depende del estado."],
+["The House of Representatives has how many voting members?","¿Cuántos miembros con derecho a voto tiene la Cámara?","Four hundred thirty-five (435).","Cuatrocientos treinta y cinco (435)."],
+["We elect a U.S. Representative for how many years?","¿Por cuántos años elegimos a un representante?","Two (2).","Dos (2)."],
+["Name your U.S. Representative.","Nombra a tu representante federal.","Answers vary by district.","Depende del distrito."],
+["Who does a U.S. Senator represent?","¿A quién representa un senador?","All people of the state.","A todas las personas del estado."],
+["Why do some states have more Representatives than other states?","¿Por qué algunos estados tienen más representantes?","Because of the state's population; because they have more people.","Por la población; porque tienen más habitantes."],
+["We elect a President for how many years?","¿Por cuántos años elegimos al presidente?","Four (4).","Cuatro (4)."],
+["In what month do we vote for President?","¿En qué mes votamos por presidente?","November.","Noviembre."],
+["What is the name of the President of the United States now?","¿Cómo se llama el presidente actual de Estados Unidos?","Check the current President before the interview.","Verifica el nombre del presidente actual."],
+["What is the name of the Vice President of the United States now?","¿Cómo se llama el vicepresidente actual?","Check the current Vice President before the interview.","Verifica el nombre del vicepresidente actual."],
+["If the President can no longer serve, who becomes President?","Si el presidente no puede continuar, ¿quién se convierte en presidente?","The Vice President.","El vicepresidente."],
+["Who is the Commander in Chief of the military?","¿Quién es el comandante en jefe de las fuerzas armadas?","The President.","El presidente."],
+["Who signs bills to become laws?","¿Quién firma los proyectos para convertirlos en leyes?","The President.","El presidente."],
+["Who vetoes bills?","¿Quién veta los proyectos de ley?","The President.","El presidente."],
+["What does the President's Cabinet do?","¿Qué hace el gabinete del presidente?","Advises the President.","Asesora al presidente."],
+["What are two Cabinet-level positions?","Nombra dos cargos del gabinete.","Secretary of State; Secretary of Defense; Attorney General; Secretary of Education, etc.","Secretario de Estado; Defensa; fiscal general; Educación, etc."],
+["What does the judicial branch do?","¿Qué hace el poder judicial?","Reviews laws; explains laws; resolves disputes; decides if laws go against the Constitution.","Revisa y explica leyes; resuelve disputas; evalúa constitucionalidad."],
+["What is the highest court in the United States?","¿Cuál es el tribunal más alto?","The Supreme Court.","La Corte Suprema."],
+["How many justices are on the Supreme Court?","¿Cuántos jueces tiene la Corte Suprema?","Nine (9).","Nueve (9)."],
+["Under our Constitution, some powers belong to the federal government. What is one power of the federal government?","Menciona un poder del gobierno federal.","Print money; declare war; create an army; make treaties.","Imprimir dinero; declarar guerra; crear ejército; hacer tratados."],
+["Under our Constitution, some powers belong to the states. What is one power of the states?","Menciona un poder de los estados.","Provide schooling; police protection; fire departments; driver's licenses; zoning.","Educación; policía; bomberos; licencias; zonificación."],
+["Who is the Governor of your state now?","¿Quién es el gobernador de tu estado?","Answers vary by state.","Depende del estado."],
+["What is the capital of your state?","¿Cuál es la capital de tu estado?","Answers vary by state.","Depende del estado."],
+["What are the two major political parties in the United States?","¿Cuáles son los dos partidos principales?","Democratic and Republican.","Demócrata y Republicano."],
+["What is the political party of the President now?","¿Cuál es el partido del presidente actual?","Check the current President's party.","Verifica el partido del presidente actual."],
+["There are four amendments to the Constitution about who can vote. Describe one of them.","Describe una enmienda sobre quién puede votar.","Citizens 18 and older can vote; no poll tax; any citizen can vote regardless of sex or race.","Ciudadanos de 18 años o más pueden votar; sin impuesto electoral; sin discriminación por sexo o raza."],
+["What is one responsibility that is only for United States citizens?","Menciona una responsabilidad exclusiva de ciudadanos.","Serve on a jury; vote in a federal election.","Servir en jurado; votar en elecciones federales."],
+["Name one right only for United States citizens.","Menciona un derecho exclusivo de ciudadanos.","Vote in a federal election; run for federal office.","Votar en elecciones federales; postularse a cargo federal."],
+["What are two rights of everyone living in the United States?","Menciona dos derechos de todas las personas en EE. UU.","Freedom of expression; speech; assembly; petition; religion; bear arms.","Expresión; palabra; reunión; petición; religión; portar armas."],
+["What do we show loyalty to when we say the Pledge of Allegiance?","¿A qué mostramos lealtad con el Juramento a la Bandera?","The United States; the flag.","A Estados Unidos; a la bandera."],
+["What is one promise you make when you become a U.S. citizen?","Menciona una promesa al naturalizarte.","Obey laws; defend the Constitution; give up loyalty to other countries; serve if needed.","Obedecer las leyes; defender la Constitución; renunciar a lealtades extranjeras; servir si es necesario."],
+["How old do citizens have to be to vote for President?","¿Qué edad se requiere para votar por presidente?","Eighteen (18) and older.","Dieciocho (18) años o más."],
+["What are two ways Americans can participate in their democracy?","¿Cuáles son dos formas de participar en la democracia?","Vote; join a political party; help a campaign; contact officials; run for office.","Votar; unirse a partido; ayudar campaña; contactar funcionarios; postularse."],
+["When is the last day you can send in federal income tax forms?","¿Cuál es el último día para presentar impuestos federales?","April 15.","15 de abril."],
+["When must all men register for the Selective Service?","¿Cuándo deben registrarse los hombres en el Servicio Selectivo?","At age 18; between 18 and 26.","A los 18 años; entre 18 y 26."],
+["What is one reason colonists came to America?","¿Por qué vinieron los colonos a América?","Freedom; political liberty; religious freedom; economic opportunity.","Libertad; libertad política o religiosa; oportunidad económica."],
+["Who lived in America before the Europeans arrived?","¿Quién vivía en América antes de los europeos?","American Indians; Native Americans.","Indígenas americanos; pueblos nativos."],
+["What group of people was taken to America and sold as slaves?","¿Qué grupo fue llevado a América y vendido como esclavo?","Africans; people from Africa.","Africanos; personas de África."],
+["Why did the colonists fight the British?","¿Por qué lucharon los colonos contra los británicos?","High taxes; British army staying in their houses; lack of self-government.","Impuestos altos; ejército británico en sus casas; falta de autogobierno."],
+["Who wrote the Declaration of Independence?","¿Quién escribió la Declaración de Independencia?","Thomas Jefferson.","Thomas Jefferson."],
+["When was the Declaration of Independence adopted?","¿Cuándo se adoptó la Declaración de Independencia?","July 4, 1776.","4 de julio de 1776."],
+["There were 13 original states. Name three.","Nombra tres de los 13 estados originales.","Any three original states, such as New York, Virginia, and Georgia.","Cualquiera de los 13 estados originales."],
+["What happened at the Constitutional Convention?","¿Qué ocurrió en la Convención Constitucional?","The Constitution was written.","Se redactó la Constitución."],
+["When was the Constitution written?","¿Cuándo se escribió la Constitución?","1787.","1787."],
+["Who is the 'Father of Our Country'?","¿Quién es el Padre de nuestra nación?","George Washington.","George Washington."],
+["Who was the first President?","¿Quién fue el primer presidente?","George Washington.","George Washington."],
+["What territory did the United States buy from France in 1803?","¿Qué territorio compró Estados Unidos a Francia en 1803?","The Louisiana Territory; Louisiana.","El territorio de Luisiana."],
+["Name one war fought by the United States in the 1800s.","Nombra una guerra de EE. UU. en el siglo XIX.","War of 1812; Mexican-American War; Civil War; Spanish-American War.","Guerra de 1812; mexicano-estadounidense; Civil; hispano-estadounidense."],
+["Name the U.S. war between the North and the South.","¿Cómo se llamó la guerra entre el Norte y el Sur?","The Civil War; the War between the States.","La Guerra Civil."],
+["Name one problem that led to the Civil War.","Nombra un problema que llevó a la Guerra Civil.","Slavery; economic reasons; states' rights.","Esclavitud; motivos económicos; derechos de los estados."],
+["What was one important thing Abraham Lincoln did?","¿Qué hizo Abraham Lincoln de importante?","Freed the slaves; saved the Union; led the U.S. during the Civil War.","Liberó a los esclavizados; preservó la Unión; lideró durante la Guerra Civil."],
+["What did the Emancipation Proclamation do?","¿Qué hizo la Proclamación de Emancipación?","Freed slaves in the Confederacy.","Liberó a las personas esclavizadas en la Confederación."],
+["What did Susan B. Anthony do?","¿Qué hizo Susan B. Anthony?","Fought for women's rights and civil rights.","Luchó por los derechos de las mujeres y civiles."],
+["Name one war fought by the United States in the 1900s.","Nombra una guerra de EE. UU. en el siglo XX.","World War I; World War II; Korean War; Vietnam War; Gulf War.","Primera/Segunda Guerra Mundial; Corea; Vietnam; Guerra del Golfo."],
+["Who was President during World War I?","¿Quién era presidente durante la Primera Guerra Mundial?","Woodrow Wilson.","Woodrow Wilson."],
+["Who was President during the Great Depression and World War II?","¿Quién era presidente durante la Gran Depresión y Segunda Guerra Mundial?","Franklin Roosevelt.","Franklin Roosevelt."],
+["Who did the United States fight in World War II?","¿Contra quién luchó EE. UU. en la Segunda Guerra Mundial?","Japan, Germany, and Italy.","Japón, Alemania e Italia."],
+["What was one important thing that Martin Luther King, Jr. did?","¿Qué hizo Martin Luther King, Jr.?","Fought for civil rights; worked for equality for all Americans.","Luchó por los derechos civiles y la igualdad."],
+["What major event happened on September 11, 2001?","¿Qué ocurrió el 11 de septiembre de 2001?","Terrorists attacked the United States.","Terroristas atacaron Estados Unidos."],
+["Name one American Indian tribe in the United States.","Nombra una tribu indígena de EE. UU.","Cherokee; Navajo; Sioux; Apache; Pueblo; Seminole; Hopi; Inuit, etc.","Cherokee; Navajo; Sioux; Apache; Pueblo; Seminole; Hopi; Inuit, entre otras."],
+["Name one of the two longest rivers in the United States.","Nombra uno de los dos ríos más largos.","Missouri River; Mississippi River.","Río Misuri; río Misisipi."],
+["What ocean is on the West Coast of the United States?","¿Qué océano está en la costa oeste?","Pacific Ocean.","Océano Pacífico."],
+["What ocean is on the East Coast of the United States?","¿Qué océano está en la costa este?","Atlantic Ocean.","Océano Atlántico."],
+["Name one U.S. territory.","Nombra un territorio estadounidense.","Puerto Rico; U.S. Virgin Islands; Guam; American Samoa; Northern Mariana Islands.","Puerto Rico; Islas Vírgenes; Guam; Samoa Americana; Islas Marianas del Norte."],
+["Name one state that borders Canada.","Nombra un estado que limita con Canadá.","Alaska, Washington, Idaho, Montana, North Dakota, Minnesota, Michigan, New York, Vermont, Maine, etc.","Alaska, Washington, Nueva York, Maine, entre otros."],
+["Name one state that borders Mexico.","Nombra un estado que limita con México.","California; Arizona; New Mexico; Texas.","California; Arizona; Nuevo México; Texas."],
+["What is the capital of the United States?","¿Cuál es la capital de Estados Unidos?","Washington, D.C.","Washington, D. C."],
+["Where is the Statue of Liberty?","¿Dónde está la Estatua de la Libertad?","New York Harbor; Liberty Island.","Puerto de Nueva York; isla de la Libertad."],
+["Why does the flag have 13 stripes?","¿Por qué la bandera tiene 13 franjas?","Because there were 13 original colonies.","Porque había 13 colonias originales."],
+["Why does the flag have 50 stars?","¿Por qué la bandera tiene 50 estrellas?","One star for each state.","Una estrella por cada estado."],
+["What is the name of the national anthem?","¿Cómo se llama el himno nacional?","The Star-Spangled Banner.","The Star-Spangled Banner."],
+["When do we celebrate Independence Day?","¿Cuándo celebramos el Día de la Independencia?","July 4.","4 de julio."],
+["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Independence Day; Thanksgiving; Christmas; Veterans Day, etc.","Año Nuevo; Independencia; Acción de Gracias; Navidad; Día de Veteranos, entre otros."]
+]};
+const interviews=[
+["What is your full legal name?","¿Cuál es tu nombre legal completo?","Say your full legal name as it appears on your documents."],
+["What is your date of birth?","¿Cuál es tu fecha de nacimiento?","Say the month, day, and year in English."],
+["What is your country of birth?","¿En qué país naciste?","Answer with the country name."],
+["What is your current home address?","¿Cuál es tu dirección actual?","Practice privately; do not enter sensitive details into a shared device."],
+["How long have you lived at your current address?","¿Cuánto tiempo has vivido en tu dirección actual?","Give the length of time truthfully."],
+["Are you currently married?","¿Estás casada actualmente?","Answer yes or no, based on your situation."],
+["How many children do you have?","¿Cuántos hijos tienes?","Say the number and be prepared to provide their details if asked."],
+["Where do you work?","¿Dónde trabajas?","State your employer or type of work truthfully."],
+["Have you traveled outside the United States in the last five years?","¿Has viajado fuera de Estados Unidos en los últimos cinco años?","Answer truthfully and review your travel dates."],
+["Have you ever claimed to be a U.S. citizen?","¿Alguna vez has afirmado ser ciudadana estadounidense?","Answer truthfully; ask a qualified immigration attorney if unsure how to answer."],
+["Have you ever been arrested or detained by law enforcement?","¿Alguna vez te han arrestado o detenido las autoridades?","Answer truthfully. If this applies, get qualified legal advice before the interview."],
+["Do you support the Constitution and the form of government of the United States?","¿Apoyas la Constitución y la forma de gobierno de Estados Unidos?","Answer truthfully and ask for clarification if you do not understand."],
+["Are you willing to take the Oath of Allegiance?","¿Estás dispuesta a tomar el Juramento de Lealtad?","Answer truthfully; discuss any concerns with a qualified legal professional."]
+];
+const phrases=[["My name is Marina.","Me llamo Marina."],["I live in New York.","Vivo en Nueva York."],["I am from Ecuador.","Soy de Ecuador."],["Nice to meet you.","Mucho gusto."],["I help people prepare immigration forms.","Ayudo a las personas a preparar formularios de inmigración."],["Could you please repeat the question?","¿Podría repetir la pregunta, por favor?"],["I do not understand. Could you explain it?","No entiendo. ¿Podría explicarlo?"],["My daughter likes to eat.","A mi hija le gusta comer."],["I would like to practice English.","Me gustaría practicar inglés."],["Thank you for your help.","Gracias por su ayuda."]];
+const writingSentences=["The President lives in the White House.","Citizens can vote.","Congress makes federal laws.","Washington, D.C. is the capital.","The flag has fifty stars.","The United States has fifty states.","I want to learn English.","The Constitution is the supreme law."];
+let qi=0, order=[], ii=0, pi=0, wi=0;
+const $=id=>document.getElementById(id);
+function setView(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['civics','interview','english','writing'].forEach(id=>$(id).classList.toggle('hidden',id!==v));}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+function bank(){return banks[$('version').value]}
+function initOrder(){order=bank().map((_,i)=>i);qi=0;renderQ()}
+function renderQ(){let b=bank(), item=b[order[qi]]; $('counter').textContent=`Pregunta ${qi+1} de ${order.length}`;$('q').textContent=item[0];let l=$('lang').value;$('translation').textContent=l==='en'?'':l==='es'?item[1]:item[1];if(l==='es')$('q').textContent=item[1];$('answer').style.display='none';$('answer').innerHTML='';$('bar').style.width=((qi+1)/order.length*100)+'%';}
+$('version').addEventListener('change',initOrder);$('lang').addEventListener('change',renderQ);
+$('show').onclick=()=>{let item=bank()[order[qi]],l=$('lang').value;$('answer').style.display='block';$('answer').innerHTML=(l==='es'?'<b>Respuesta:</b> '+item[3]: '<b>Answer:</b> '+item[2])+(l==='both'?'<br><br><b>En español:</b> '+item[3]:'');};
+$('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
+$('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
+function speak(t,lang='en-US'){if(!('speechSynthesis'in window)){alert('Tu navegador no admite lectura de voz.');return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=.85;speechSynthesis.speak(u)}
+$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speak(phrases[pi][0]);$('writeListen').onclick=()=>speak(writingSentences[wi][0]);
+function renderInterview(){$('icounter').textContent=`Pregunta ${ii+1} de ${interviews.length}`;$('iq').textContent=interviews[ii][0];$('ihint').textContent=interviews[ii][1];$('ianswer').value='';$('itip').style.display='none';$('ibar').style.width=((ii+1)/interviews.length*100)+'%'}
+$('inext').onclick=()=>{ii=(ii+1)%interviews.length;renderInterview()};$('ihintbtn').onclick=()=>{$('itip').textContent=interviews[ii][2];$('itip').style.display='block'};
+function renderPhrase(){$('phrase').textContent=phrases[pi][0];$('phraseEs').textContent=phrases[pi][1];$('speechResult').textContent='Tu práctica aparecerá aquí cuando uses el micrófono.'}
+$('phraseNext').onclick=()=>{pi=(pi+1)%phrases.length;renderPhrase()};
+$('mic').onclick=()=>{let SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('speechResult').textContent='El reconocimiento de voz no está disponible en este navegador. Puedes escuchar la frase y repetirla en voz alta.';return}let r=new SR();r.lang='en-US';r.interimResults=false;r.maxAlternatives=1;$('speechResult').style.display='block';$('speechResult').textContent='Escuchando… habla ahora.';r.onresult=e=>{let said=e.results[0][0].transcript;$('speechResult').textContent='Te escuché: “'+said+'”. Frase objetivo: “'+phrases[pi][0]+'”. Compara ambas y vuelve a intentarlo.'};r.onerror=()=>{$('speechResult').textContent='No pude escuchar con claridad. Revisa el permiso del micrófono e intenta otra vez.'};r.start()};
+function renderWriting(){$('writePrompt').textContent=writingSentences[wi];$('written').value='';$('writeFeedback').textContent=''}
+$('writeNew').onclick=()=>{wi=(wi+1)%writingSentences.length;renderWriting()};
+$('checkWriting').onclick=()=>{let expected=writingSentences[wi].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
+initOrder();renderInterview();renderPhrase();renderWriting();
+</script>
+</body>
+</html>
