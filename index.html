@@ -37,7 +37,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <p>Preparación para la ciudadanía estadounidense · Español e inglés</p>
 </header>
 <main>
-  <div class="notice"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Esta primera versión incluye preguntas de muestra; no es todavía el banco oficial completo.</div>
+  <div class="notice"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Incluye bancos de práctica bilingües para las versiones 2008 y 2025. Algunas respuestas dependen de cargos actuales o de tu estado; verifícalas con USCIS antes del examen.</div>
   <div class="tabs">
     <button class="tab active" data-view="civics">Cívica</button>
     <button class="tab" data-view="interview">Entrevista N-400</button>
@@ -47,7 +47,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <section id="civics" class="panel">
     <h2>Práctica de educación cívica</h2>
     <label for="version">Versión de práctica</label>
-    <select id="version"><option value="2025">Examen 2025 (muestra)</option><option value="2008">Examen 2008 (muestra)</option></select>
+    <select id="version"><option value="2025">Examen 2025 (128 preguntas)</option><option value="2008">Examen 2008 (100 preguntas)</option></select>
     <label for="lang">Idioma de apoyo</label>
     <select id="lang"><option value="both">Inglés y español</option><option value="en">Solo inglés</option><option value="es">Solo español</option></select>
     <div class="progress"><div id="bar"></div></div>
@@ -194,7 +194,49 @@ const banks={
 ["Why does the flag have 50 stars?","¿Por qué la bandera tiene 50 estrellas?","Because there is one star for each state.","Porque hay una estrella por cada estado."],
 ["What is the name of the national anthem?","¿Cómo se llama el himno nacional?","The Star-Spangled Banner.","The Star-Spangled Banner."],
 ["When do we celebrate Independence Day?","¿Cuándo celebramos el Día de la Independencia?","July 4.","4 de julio."],
-["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Martin Luther King, Jr. Day; Presidents' Day; Memorial Day; Juneteenth; Independence Day; Labor Day; Columbus Day; Veterans Day; Thanksgiving; Christmas.","Año Nuevo; Día de Martin Luther King; Día de los Presidentes; Memorial Day; Juneteenth; Independencia; Día del Trabajo; Acción de Gracias; Navidad, entre otros."]
+["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Martin Luther King, Jr. Day; Presidents' Day; Memorial Day; Juneteenth; Independence Day; Labor Day; Columbus Day; Veterans Day; Thanksgiving; Christmas.","Año Nuevo; Día de Martin Luther King; Día de los Presidentes; Memorial Day; Juneteenth; Independencia; Día del Trabajo; Acción de Gracias; Navidad, entre otros."],
+["Who is one of your state's U.S. senators now?","¿Quién es uno de los senadores actuales de tu estado?","Answers will vary by state; check the current officeholder.","Las respuestas varían según el estado; verifica quién ocupa el cargo actualmente."],
+["How many voting members are in the House of Representatives?","¿Cuántos miembros con derecho a voto hay en la Cámara de Representantes?","Four hundred thirty-five (435).","Cuatrocientos treinta y cinco (435)."],
+["How long is a term for a member of the House of Representatives?","¿Cuánto dura el mandato de un miembro de la Cámara de Representantes?","Two (2) years.","Dos (2) años."],
+["Why do U.S. representatives serve shorter terms than U.S. senators?","¿Por qué los representantes tienen mandatos más cortos que los senadores?","To more closely follow public opinion.","Para seguir más de cerca la opinión pública."],
+["How many senators does each state have?","¿Cuántos senadores tiene cada estado?","Two (2).","Dos (2)."],
+["Why does each state have two senators?","¿Por qué cada estado tiene dos senadores?","Equal representation for each state.","Representación igual para cada estado."],
+["What is one power of the President?","Menciona un poder del presidente.","Signs bills; vetoes bills; enforces laws; is Commander in Chief.","Firma proyectos de ley; los veta; hace cumplir las leyes; es comandante en jefe."],
+["Who is the Commander in Chief of the U.S. military?","¿Quién es el comandante en jefe de las Fuerzas Armadas?","The President.","El presidente."],
+["Who appoints federal judges?","¿Quién nombra a los jueces federales?","The President.","El presidente."],
+["Who confirms federal judges?","¿Quién confirma a los jueces federales?","The Senate.","El Senado."],
+["What is one part of the judicial branch?","Menciona una parte de la rama judicial.","The Supreme Court; federal courts.","La Corte Suprema; los tribunales federales."],
+["What is one power of the federal government?","Menciona un poder del gobierno federal.","Prints money; declares war; creates an army; makes treaties.","Imprime dinero; declara la guerra; crea un ejército; firma tratados."],
+["What is one power of state governments?","Menciona un poder de los gobiernos estatales.","Provides schooling and education; provides protection; gives driver's licenses; approves zoning and land use.","Proporciona educación; brinda protección; expide licencias de conducir; regula el uso del suelo."],
+["Who is the Governor of your state now?","¿Quién es el gobernador actual de tu estado?","Answers will vary. Check the current governor of your state.","La respuesta varía. Verifica quién es el gobernador actual de tu estado."],
+["What is the capital of your state?","¿Cuál es la capital de tu estado?","Answers will vary by state.","La respuesta varía según el estado."],
+["What are the two major political parties in the United States?","¿Cuáles son los dos principales partidos políticos de Estados Unidos?","Democratic and Republican.","Demócrata y Republicano."],
+["What is the political party of the President now?","¿Cuál es el partido político del presidente actual?","Check the current President's political party; this answer can change.","Verifica el partido del presidente actual; esta respuesta puede cambiar."],
+["What is the name of the Speaker of the House of Representatives now?","¿Cómo se llama el presidente actual de la Cámara de Representantes?","Check the current Speaker; this answer can change.","Verifica quién ocupa actualmente el cargo; esta respuesta puede cambiar."],
+["What are four amendments to the Constitution about who can vote? Name one.","Hay cuatro enmiendas sobre quién puede votar. Menciona una.","Citizens 18 and older can vote; no poll tax; women and men can vote; race cannot be used to deny voting.","Los ciudadanos de 18 años o más pueden votar; no hay impuesto electoral; mujeres y hombres pueden votar; no se puede negar el voto por raza."],
+["What is one responsibility that is only for U.S. citizens?","Menciona una responsabilidad exclusiva de los ciudadanos estadounidenses.","Serve on a jury; vote in a federal election.","Servir en un jurado; votar en una elección federal."],
+["Name one right only for U.S. citizens.","Menciona un derecho exclusivo de los ciudadanos estadounidenses.","Vote in a federal election; run for federal office.","Votar en una elección federal; postularse a un cargo federal."],
+["What are two rights of everyone living in the United States?","¿Cuáles son dos derechos de todas las personas que viven en Estados Unidos?","Freedom of expression; freedom of speech; freedom of assembly; freedom to petition the government; freedom of religion; right to bear arms.","Libertad de expresión; de palabra; de reunión; de petición; de religión; derecho a portar armas."],
+["What do we show loyalty to when we say the Pledge of Allegiance?","¿A qué mostramos lealtad al decir el Juramento a la Bandera?","The United States; the flag.","A Estados Unidos; a la bandera."],
+["What is one promise you make when you become a U.S. citizen?","¿Qué promesa haces al convertirte en ciudadano estadounidense?","Give up loyalty to other countries; defend the Constitution; obey U.S. laws; serve the nation if needed.","Renunciar a la lealtad a otros países; defender la Constitución; obedecer las leyes; servir al país si es necesario."],
+["How old do citizens have to be to vote for President?","¿Qué edad deben tener los ciudadanos para votar por el presidente?","Eighteen (18) or older.","Dieciocho (18) años o más."],
+["What are two ways Americans can participate in their democracy?","¿Cuáles son dos formas de participar en la democracia estadounidense?","Vote; join a political party; help with a campaign; contact elected officials; run for office; express an opinion.","Votar; unirse a un partido; ayudar en una campaña; contactar a funcionarios; postularse; expresar una opinión."],
+["When is the last day you can send in federal income tax forms?","¿Cuál es el último día para enviar la declaración federal de impuestos sobre ingresos?","April 15.","15 de abril."],
+["When must all men register for the Selective Service?","¿Cuándo deben registrarse los hombres en el Servicio Selectivo?","At age eighteen (18); between 18 and 26.","A los 18 años; entre los 18 y los 26 años."],
+["What is one reason colonists came to America?","Menciona una razón por la que los colonos llegaron a América.","Freedom; political liberty; religious freedom; economic opportunity; to practice their religion; to escape persecution.","Libertad; libertad política o religiosa; oportunidades económicas; practicar su religión; escapar de persecución."],
+["What group of people was taken to America and sold as slaves?","¿Qué grupo fue llevado a América y vendido como esclavo?","Africans; people from Africa.","Africanos; personas de África."],
+["What is one thing Benjamin Franklin is famous for?","¿Por qué es famoso Benjamin Franklin?","U.S. diplomat; oldest member of the Constitutional Convention; first Postmaster General; writer of Poor Richard's Almanac; started the first free libraries.","Diplomático; miembro de mayor edad de la Convención Constitucional; primer director general de Correos; escritor; impulsó bibliotecas gratuitas."],
+["Who was President during World War I?","¿Quién era presidente durante la Primera Guerra Mundial?","Woodrow Wilson.","Woodrow Wilson."],
+["Who was President during the Great Depression and World War II?","¿Quién era presidente durante la Gran Depresión y la Segunda Guerra Mundial?","Franklin Roosevelt.","Franklin Roosevelt."],
+["Before he was President, Eisenhower was a general. What war was he in?","Antes de ser presidente, Eisenhower fue general. ¿En qué guerra participó?","World War II.","La Segunda Guerra Mundial."],
+["During the Cold War, what was the main concern of the United States?","Durante la Guerra Fría, ¿cuál era la principal preocupación de Estados Unidos?","Communism.","El comunismo."],
+["What movement tried to end racial discrimination?","¿Qué movimiento intentó acabar con la discriminación racial?","The civil rights movement.","El movimiento por los derechos civiles."],
+["What did Susan B. Anthony do?","¿Qué hizo Susan B. Anthony?","Fought for women's rights; fought for civil rights.","Luchó por los derechos de las mujeres y los derechos civiles."],
+["What happened at the Constitutional Convention?","¿Qué ocurrió en la Convención Constitucional?","The Constitution was written.","Se redactó la Constitución."],
+["When was the Constitution written?","¿Cuándo se redactó la Constitución?","1787.","En 1787."],
+["Name one writer of the Federalist Papers.","Menciona a un autor de los Documentos Federalistas.","James Madison; Alexander Hamilton; John Jay.","James Madison; Alexander Hamilton; John Jay."],
+["What is the 'Father of Our Country' called?","¿A quién se le llama el Padre de la Patria?","George Washington.","George Washington."],
+["What territory did the United States buy from France in 1803?","¿Qué territorio compró Estados Unidos a Francia en 1803?","The Louisiana Territory; Louisiana.","El territorio de Luisiana; Luisiana."]
 ],
 2008:[
 ["What is the supreme law of the land?","¿Cuál es la ley suprema del país?","The Constitution.","La Constitución."],
@@ -288,7 +330,15 @@ const banks={
 ["Why does the flag have 50 stars?","¿Por qué la bandera tiene 50 estrellas?","One star for each state.","Una estrella por cada estado."],
 ["What is the name of the national anthem?","¿Cómo se llama el himno nacional?","The Star-Spangled Banner.","The Star-Spangled Banner."],
 ["When do we celebrate Independence Day?","¿Cuándo celebramos el Día de la Independencia?","July 4.","4 de julio."],
-["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Independence Day; Thanksgiving; Christmas; Veterans Day, etc.","Año Nuevo; Independencia; Acción de Gracias; Navidad; Día de Veteranos, entre otros."]
+["Name two national U.S. holidays.","Nombra dos feriados nacionales de EE. UU.","New Year's Day; Independence Day; Thanksgiving; Christmas; Veterans Day, etc.","Año Nuevo; Independencia; Acción de Gracias; Navidad; Día de Veteranos, entre otros."],
+["What does the Constitution do?","¿Qué hace la Constitución?","Sets up the government; defines the government; protects basic rights of Americans.","Establece el gobierno; define el gobierno; protege los derechos básicos de los estadounidenses."],
+["Who is one of your state's U.S. Senators now?","¿Quién es uno de los senadores actuales de tu estado?","Answers will vary by state. Check the current officeholder.","La respuesta varía según el estado. Verifica quién ocupa el cargo actualmente."],
+["The House of Representatives has how many voting members?","¿Cuántos miembros con derecho a voto tiene la Cámara de Representantes?","Four hundred thirty-five (435).","Cuatrocientos treinta y cinco (435)."],
+["We elect a U.S. Representative for how many years?","¿Por cuántos años elegimos a un representante federal?","Two (2) years.","Dos (2) años."],
+["What does the President's Cabinet do?","¿Qué hace el Gabinete del presidente?","Advises the President.","Asesora al presidente."],
+["What are two Cabinet-level positions?","Menciona dos cargos a nivel de gabinete.","Secretary of State; Secretary of Defense; Secretary of Education; Attorney General; Vice President; and others.","Secretario de Estado; secretario de Defensa; secretario de Educación; fiscal general; vicepresidente, entre otros."],
+["Who is the 'Father of Our Country'?","¿Quién es el Padre de la Patria?","George Washington.","George Washington."],
+["Before he was President, Eisenhower was a general. What war was he in?","Antes de ser presidente, Eisenhower fue general. ¿En qué guerra participó?","World War II.","La Segunda Guerra Mundial."]
 ]};
 const interviews=[
 ["What is your full legal name?","¿Cuál es tu nombre legal completo?","Say your full legal name as it appears on your documents."],
