@@ -22,7 +22,7 @@ label{display:block;font-size:14px;font-weight:650;margin:12px 0 5px}
 select,input{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:11px;background:white;color:var(--ink)}
 .primary{background:var(--blue);color:white}.secondary{background:#e8eef5;color:var(--navy)}.gold{background:var(--gold);color:#302407}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions button{flex:1;min-width:120px}
-.question{font-size:21px;font-weight:750;margin:10px 0}.answer{background:#eef6ff;border-left:4px solid var(--blue);padding:12px;border-radius:8px;margin:12px 0;display:none}
+.question{font-size:21px;font-weight:750;margin:10px 0}.answer-options{padding-left:26px;margin:8px 0}.answer-options li{margin:5px 0}.answer-block{margin:8px 0}.answer-listen{display:block;margin-top:10px}.answer{background:#eef6ff;border-left:4px solid var(--blue);padding:12px;border-radius:8px;margin:12px 0;display:none}
 .small{font-size:13px;color:var(--muted)}.progress{height:7px;background:#e7edf4;border-radius:20px;overflow:hidden;margin:10px 0}.progress div{height:100%;width:0;background:var(--gold);transition:width .2s}
 .pill{display:inline-block;background:#eaf2fa;color:var(--navy);border-radius:20px;padding:4px 9px;font-size:12px;font-weight:700}
 .hidden{display:none!important}.status{font-weight:700;margin-top:10px}.correct{color:var(--green)}.wrong{color:var(--red)}
@@ -365,10 +365,35 @@ function bank(){return banks[$('version').value]}
 function initOrder(){order=bank().map((_,i)=>i);qi=0;renderQ()}
 function renderQ(){let b=bank(), item=b[order[qi]]; $('counter').textContent=`Pregunta ${qi+1} de ${order.length}`;$('q').textContent=item[0];let l=$('lang').value;$('translation').textContent=l==='en'?'':l==='es'?item[1]:item[1];if(l==='es')$('q').textContent=item[1];$('answer').style.display='none';$('answer').innerHTML='';$('bar').style.width=((qi+1)/order.length*100)+'%';}
 $('version').addEventListener('change',initOrder);$('lang').addEventListener('change',renderQ);
-$('show').onclick=()=>{let item=bank()[order[qi]],l=$('lang').value;$('answer').style.display='block';$('answer').innerHTML=(l==='es'?'<b>Respuesta:</b> '+item[3]: '<b>Answer:</b> '+item[2])+(l==='both'?'<br><br><b>En español:</b> '+item[3]:'');};
+function escapeHTML(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function formatOptions(value){
+  const parts=String(value).split(';').map(x=>x.trim()).filter(Boolean);
+  if(parts.length>1) return '<ol class="answer-options">'+parts.map(x=>'<li>'+escapeHTML(x)+'</li>').join('')+'</ol>';
+  return '<div>'+escapeHTML(value)+'</div>';
+}
+$('show').onclick=()=>{
+  let item=bank()[order[qi]],l=$('lang').value;
+  $('answer').style.display='block';
+  const en='<div class="answer-block"><b>Answer:</b>'+formatOptions(item[2])+'<button type="button" class="secondary answer-listen" id="listenAnswerEn">🔊 Escuchar respuesta en inglés</button></div>';
+  const es='<div class="answer-block"><b>Respuesta:</b>'+formatOptions(item[3])+'<button type="button" class="secondary answer-listen" id="listenAnswerEs">🔊 Escuchar respuesta en español</button></div>';
+  $('answer').innerHTML=l==='es'?es:l==='en'?en:en+'<hr>'+es;
+  const clean=value=>String(value).split(';').map(x=>x.trim()).filter(Boolean).map((x,i)=>`Option ${i+1}. ${x}`).join('. ');
+  const enBtn=$('listenAnswerEn'); if(enBtn) enBtn.onclick=()=>speak(clean(item[2]),'en-US');
+  const esBtn=$('listenAnswerEs'); if(esBtn) esBtn.onclick=()=>speak(clean(item[3]),'es-US');
+};
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
-function speak(t,lang='en-US'){if(!('speechSynthesis'in window)){alert('Tu navegador no admite lectura de voz.');return}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang=lang;u.rate=.85;speechSynthesis.speak(u)}
+function speak(t,lang='en-US'){
+  const synth=window.speechSynthesis;
+  if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible en este navegador. Abre la aplicación en Safari y revisa que el teléfono no esté en silencio.');return}
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(String(t));
+  u.lang=lang; u.rate=0.88; u.pitch=1;
+  const chooseVoice=()=>{const voices=synth.getVoices();const prefix=lang.toLowerCase().startsWith('es')?'es':'en';const match=voices.find(v=>v.lang.toLowerCase().startsWith(prefix));if(match)u.voice=match;};
+  chooseVoice();
+  u.onerror=()=>{console.warn('No se pudo reproducir el audio. Comprueba el volumen y vuelve a tocar Escuchar.');};
+  if(synth.getVoices().length===0){synth.onvoiceschanged=()=>{chooseVoice();synth.speak(u);synth.onvoiceschanged=null;};}else{synth.speak(u);}
+}
 $('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speak(phrases[pi][0]);$('writeListen').onclick=()=>speak(writingSentences[wi][0]);
 function renderInterview(){$('icounter').textContent=`Pregunta ${ii+1} de ${interviews.length}`;$('iq').textContent=interviews[ii][0];$('ihint').textContent=interviews[ii][1];$('ianswer').value='';$('itip').style.display='none';$('ibar').style.width=((ii+1)/interviews.length*100)+'%'}
 $('inext').onclick=()=>{ii=(ii+1)%interviews.length;renderInterview()};$('ihintbtn').onclick=()=>{$('itip').textContent=interviews[ii][2];$('itip').style.display='block'};
