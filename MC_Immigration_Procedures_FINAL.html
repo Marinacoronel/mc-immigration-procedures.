@@ -97,6 +97,20 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <section id="writing" class="panel hidden">
     <h2>Lectura y escritura</h2>
     <p class="small">Practica 100 frases. Lee, escucha, escribe y contesta la pregunta de comprensión.</p>
+    <div class="actions"><button class="gold" id="studyModeBtn" type="button">📖 Activar modo estudio</button></div>
+    <div id="studyModePanel" class="answer" style="display:none">
+      <h3>Modo estudio: practica tu lectura en inglés</h3>
+      <p class="small">Lee en voz alta la oración en inglés. Toca el micrófono y permite el acceso cuando Safari lo solicite. Después podrás comparar lo que dijiste con la oración correcta.</p>
+      <div class="question" id="studySentence">The United States has fifty states.</div>
+      <div class="actions">
+        <button class="secondary" id="studyListen" type="button">🔊 Escuchar en inglés</button>
+        <button class="primary" id="studyMic" type="button">🎙️ Activar micrófono</button>
+        <button class="secondary" id="studyStop" type="button" disabled>Detener</button>
+      </div>
+      <div id="studyStatus" class="small" aria-live="polite">Presiona “Activar micrófono” y lee la oración completa.</div>
+      <div id="studyResult" class="small" style="margin-top:8px"></div>
+      <div class="actions"><button class="secondary" id="studyRetry" type="button">↻ Intentar otra vez</button><button class="secondary" id="studyNext" type="button">Siguiente oración →</button></div>
+    </div>
     <div class="progress"><div id="wbar"></div></div>
     <div class="small" id="wcounter">Frase 1 de 100</div>
     <div class="question" id="writePrompt">The United States has fifty states.</div>
@@ -442,11 +456,54 @@ const definitions=[["Oath","A promise to tell the truth."],["Not combat","Not fi
 function renderWriting(){
  const item=writingItems[wi];
  $('wcounter').textContent=`Frase ${wi+1} de ${writingItems.length}`;
+ if($('studySentence')) $('studySentence').textContent=item[0];
+ if($('studyStatus')) $('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa.';
+ if($('studyResult')) $('studyResult').textContent='';
  $('wbar').style.width=((wi+1)/writingItems.length*100)+'%';
  $('writePrompt').textContent=item[0];$('writeTranslation').textContent=item[1];
  $('writeQuestion').textContent=item[2];$('writeQuestionEs').textContent=item[4];
  $('writeAnswer').textContent='';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
 }
+
+// Modo estudio: reconocimiento de lectura en inglés cuando el navegador lo admite.
+let studyRecognition=null;
+function normalizeSpeech(value){return String(value||'').toLowerCase().replace(/[^a-z0-9' ]/gi,' ').replace(/\s+/g,' ').trim()}
+function compareReading(target,spoken){
+ const a=normalizeSpeech(target).split(' ').filter(Boolean), b=normalizeSpeech(spoken).split(' ').filter(Boolean);
+ if(!a.length)return 0;
+ let matched=0; const used=new Set();
+ a.forEach(word=>{const idx=b.findIndex((w,i)=>w===word&&!used.has(i));if(idx>=0){matched++;used.add(idx)}});
+ return Math.round(matched/a.length*100);
+}
+$('studyModeBtn').onclick=()=>{
+ const panel=$('studyModePanel');
+ const opening=panel.style.display==='none'||!panel.style.display;
+ panel.style.display=opening?'block':'none';
+ $('studyModeBtn').textContent=opening?'✖ Cerrar modo estudio':'📖 Activar modo estudio';
+ if(opening){$('studySentence').textContent=writingItems[wi][0];$('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa.';}
+};
+$('studyListen').onclick=()=>speak(writingItems[wi][0],'en-US');
+function stopStudyRecognition(){if(studyRecognition){try{studyRecognition.stop()}catch(e){} studyRecognition=null;} $('studyMic').disabled=false;$('studyStop').disabled=true;}
+$('studyMic').onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$('studyStatus').textContent='Este navegador no ofrece reconocimiento de voz. Prueba desde Safari actualizado y verifica los permisos del micrófono; también puedes escuchar y repetir la frase.';return;}
+ stopStudyRecognition();
+ const recognition=new SR();studyRecognition=recognition;recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=1;recognition.continuous=false;
+ $('studyMic').disabled=true;$('studyStop').disabled=false;$('studyResult').textContent='';$('studyStatus').textContent='🎙️ Escuchando… lee la oración en inglés ahora.';
+ recognition.onresult=(event)=>{
+   const spoken=event.results&&event.results[0]&&event.results[0][0]?event.results[0][0].transcript:'';
+   const target=writingItems[wi][0];const score=compareReading(target,spoken);
+   $('studyResult').innerHTML='<b>Lo que reconoció el micrófono:</b> '+escapeHTML(spoken)+'<br><b>Oración correcta:</b> '+escapeHTML(target)+'<br><b>Coincidencia aproximada de palabras:</b> '+score+'%';
+   $('studyStatus').textContent=score>=90?'¡Excelente lectura! Sigue practicando para mantener la claridad.':score>=65?'¡Buen intento! Repite la oración y presta atención a las palabras que faltaron.':'Vamos paso a paso. Escucha la oración y vuelve a leerla despacio.';
+ };
+ recognition.onerror=(event)=>{$('studyStatus').textContent=event.error==='not-allowed'?'El micrófono no tiene permiso. Activa el permiso para este sitio en los ajustes de Safari.':'No pude reconocer la lectura. Revisa el micrófono e intenta otra vez.';};
+ recognition.onend=()=>{if(studyRecognition===recognition)studyRecognition=null;$('studyMic').disabled=false;$('studyStop').disabled=true;};
+ try{recognition.start()}catch(error){$('studyStatus').textContent='No se pudo iniciar el micrófono. Espera un momento e intenta otra vez.';stopStudyRecognition();}
+};
+$('studyStop').onclick=()=>{if(studyRecognition){try{studyRecognition.stop()}catch(e){}}};
+$('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa.';};
+$('studyNext').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting();$('studySentence').textContent=writingItems[wi][0];};
+
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
 $('checkWriting').onclick=()=>{let expected=writingItems[wi][0].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
 $('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Answer:</b> '+writingItems[wi][3]+'<br><span class="small">Respuesta: '+writingItems[wi][5]+'</span>'};
