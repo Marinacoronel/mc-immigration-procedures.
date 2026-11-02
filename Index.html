@@ -128,9 +128,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <div class="question" id="writePrompt">The United States has fifty states.</div>
     <div class="small" id="writeTranslation">Estados Unidos tiene cincuenta estados.</div>
     <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar frase</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writeNew">Siguiente frase →</button></div>
-    <label for="written">Escribe la frase en inglés</label>
+    <label for="written">Escribe la frase en inglés o dicta tu respuesta con el micrófono</label>
     <input id="written" placeholder="Type the sentence here">
-    <div class="actions"><button class="primary" id="checkWriting">Revisar escritura</button></div>
+    <div class="actions">
+      <button class="secondary" id="writeMic" type="button">🎙️ Dictar en inglés</button>
+      <button class="primary" id="checkWriting">Revisar escritura</button>
+    </div>
+    <div id="writeMicStatus" class="small" aria-live="polite">Pulsa “Dictar en inglés” y di la frase para colocarla en el espacio de escritura.</div>
     <div id="writeFeedback" class="status"></div>
     <div class="answer" id="comprehension" style="display:block">
       <b id="writeQuestion">How many states does the United States have?</b>
@@ -545,6 +549,24 @@ $('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').te
 $('studyNext').onclick=()=>{studyIndex=(studyIndex+1)%writingItems.length;renderStudyPractice();};
 
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
+$('writeMic').onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$('writeMicStatus').textContent='El dictado por micrófono no está disponible en este navegador. Puedes escribir la frase manualmente.';return;}
+ const recognition=new SR();
+ recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=1;
+ $('writeMic').disabled=true;
+ $('writeMicStatus').textContent='Escuchando… di la frase completa en inglés.';
+ recognition.onresult=(event)=>{
+   const spoken=event.results[0][0].transcript;
+   $('written').value=spoken;
+   $('writeMicStatus').textContent='El micrófono escribió: “'+spoken+'”. Ahora pulsa “Revisar escritura”.';
+ };
+ recognition.onerror=(event)=>{
+   $('writeMicStatus').textContent=event.error==='not-allowed'?'No hay permiso para usar el micrófono. Activa el permiso en Safari.':'No pude reconocer la frase. Intenta otra vez o escribe la respuesta.';
+ };
+ recognition.onend=()=>{$('writeMic').disabled=false;};
+ try{recognition.start();}catch(error){$('writeMicStatus').textContent='No se pudo iniciar el micrófono. Espera un momento e intenta otra vez.';$('writeMic').disabled=false;}
+};
 $('checkWriting').onclick=()=>{let expected=writingItems[wi][0].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
 $('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Answer:</b> '+writingItems[wi][3]+'<br><span class="small">Respuesta: '+writingItems[wi][5]+'</span>'};
 $('writeListenEs').onclick=()=>speak(writingItems[wi][1],'es-US');
