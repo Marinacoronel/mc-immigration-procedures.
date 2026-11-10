@@ -163,20 +163,20 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <p class="small">El uso del micrófono requiere permiso y compatibilidad del navegador. En iPhone, abre la aplicación en Safari y permite el acceso al micrófono cuando se solicite.</p>
     </div>
     <div class="progress"><div id="wbar"></div></div>
-    <div class="small" id="wcounter">Frase 1 de 43</div>
-    <div class="question" id="writePrompt">The United States has fifty states.</div>
-    <div class="small" id="writeTranslation">Estados Unidos tiene cincuenta estados.</div>
-    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar frase</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writeNew">Siguiente frase →</button></div>
-    <label for="written">Escribe la frase en inglés</label>
-    <input id="written" placeholder="Type the sentence here">
+    <div class="small" id="wcounter">Pregunta 1 de 43</div>
+    <div class="question" id="writePrompt">Who is on the dollar bill?</div>
+    <div class="small" id="writeTranslation">¿Quién aparece en el billete de un dólar?</div>
+    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar pregunta</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writeNew">Siguiente pregunta →</button></div>
+    <label for="written">Escribe la respuesta en inglés</label>
+    <input id="written" placeholder="Write your answer in English">
     <div class="actions">
-      <button class="primary" id="checkWriting">Revisar escritura</button>
+      <button class="primary" id="checkWriting">Revisar respuesta</button>
     </div>
     <div id="writeFeedback" class="status"></div>
     <div class="answer" id="comprehension" style="display:block">
-      <b id="writeQuestion">How many states does the United States have?</b>
-      <div class="small" id="writeQuestionEs">¿Cuántos estados tiene Estados Unidos?</div>
-      <div class="actions"><button class="secondary" id="showWriteAnswer">Mostrar respuesta</button><button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button></div>
+      <b id="writeQuestion">Pregunta:</b>
+      <div class="small" id="writeQuestionEs"></div>
+      <div class="actions"><button class="secondary" id="showWriteAnswer">Mostrar respuesta correcta</button><button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button></div>
       <div id="writeAnswer" class="small"></div>
     </div>
 
@@ -520,7 +520,7 @@ function speakSequence(items){
   };
   window.setTimeout(playNext,100);
 }
-$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speakSequence([{text:$('writePrompt').textContent,lang:'en-US'},{text:$('writeTranslation').textContent,lang:'es-US'}]);
+$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak(writingItems[wi][2],'en-US');
 function renderInterview(){$('icounter').textContent=`Pregunta ${ii+1} de ${interviews.length}`;$('iq').textContent=interviews[ii][0];$('ihint').textContent=interviews[ii][1];$('ianswer').value='';$('itip').style.display='none';$('ibar').style.width=((ii+1)/interviews.length*100)+'%'}
 $('inext').onclick=()=>{ii=(ii+1)%interviews.length;renderInterview()};$('ihintbtn').onclick=()=>{$('itip').textContent=interviews[ii][2];$('itip').style.display='block'};
 function renderPhrase(){$('phrase').textContent=phrases[pi][0];$('phraseEs').textContent=phrases[pi][1];$('speechResult').textContent='Tu práctica aparecerá aquí cuando uses el micrófono.'}
@@ -561,9 +561,9 @@ function renderWriting(){
  const item=writingItems[wi];
  $('wcounter').textContent=`Frase ${wi+1} de ${writingItems.length}`;
  $('wbar').style.width=((wi+1)/writingItems.length*100)+'%';
- $('writePrompt').textContent=item[0];$('writeTranslation').textContent=item[1];
+ $('writePrompt').textContent=item[2];$('writeTranslation').textContent=item[4];
  studyIndex=wi;renderStudyPractice();
- $('writeQuestion').textContent=item[2];$('writeQuestionEs').textContent=item[4];
+ $('writeQuestion').textContent='Pregunta: '+item[2];$('writeQuestionEs').textContent=item[4];
  $('writeAnswer').textContent='';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
 }
 
@@ -584,7 +584,7 @@ function compareReading(target,spoken){
 }
 function renderStudyPractice(){
  $('studyCounter').textContent=`Práctica de micrófono: frase ${studyIndex+1} de ${writingItems.length}`;
- $('studySentence').textContent=writingItems[studyIndex][0];
+ $('studySentence').textContent=writingItems[studyIndex][2];
  $('studyStatus').textContent='Presiona “Activar micrófono” y lee la pregunta completa en inglés.';
  $('studyResult').textContent='';
 }
@@ -617,9 +617,9 @@ $('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').te
 $('studyNext').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting();};
 
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
-$('checkWriting').onclick=()=>{let expected=writingItems[wi][0].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
+$('checkWriting').onclick=()=>{let expected=writingItems[wi][3].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
 $('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Answer:</b> '+writingItems[wi][3]+'<br><span class="small">Respuesta: '+writingItems[wi][5]+'</span>'};
-$('writeListenEs').onclick=()=>speak(writingItems[wi][1],'es-US');
+$('writeListenEs').onclick=()=>speak(writingItems[wi][4],'es-US');
 $('listenWriteQA').onclick=()=>speakSequence([{text:'Question. '+writingItems[wi][2],lang:'en-US'},{text:'Pregunta. '+writingItems[wi][4],lang:'es-US'},{text:'Answer. '+writingItems[wi][3],lang:'en-US'},{text:'Respuesta. '+writingItems[wi][5],lang:'es-US'}]);
 $('definitionsList').innerHTML=definitions.map(([term,meaning,translation])=>'<div class="definition"><b>Palabra en inglés: '+escapeHTML(term)+'</b><div class="small"><b>Meaning in English:</b> '+escapeHTML(meaning)+'</div><div class="small spanish-translation"><b>Traducción al español:</b> '+escapeHTML(translation)+'</div></div>').join('');
 
