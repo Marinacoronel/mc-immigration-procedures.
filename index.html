@@ -148,16 +148,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <option value="long">Versión larga · 40 oraciones avanzadas</option>
     </select>
     <div class="answer" id="studyModePanel" style="display:block; margin-bottom:16px">
-      <h3>🎙️ PRÁCTICA DE PRONUNCIACIÓN CON MICRÓFONO</h3>
-      <p class="small">PRIMERO: practica aquí la lectura en voz alta. Pulsa el botón azul grande “ACTIVAR MICRÓFONO”, permite el acceso al micrófono y lee la oración en inglés. La aplicación mostrará lo que escuchó para que puedas compararlo con la frase correcta.</p>
-      <div class="small" id="studyCounter">Práctica de micrófono: frase 1 de 43</div>
+      <h3>🎙️ PRÁCTICA DE LECTURA CON MICRÓFONO</h3>
+      <p class="small">Lee en voz alta la PREGUNTA en inglés que aparece aquí. Por ejemplo: “Who is on the dollar bill?”. Pulsa “ACTIVAR MICRÓFONO” para que la aplicación escuche tu pronunciación y la compare con la pregunta correcta. No dictes la respuesta.</p>
+      <div class="small" id="studyCounter">Práctica de lectura: pregunta 1 de 43</div>
       <div class="question" id="studySentence">The United States has fifty states.</div>
       <div class="actions">
         <button class="secondary" id="studyListen" type="button">🔊 Escuchar oración</button>
-        <button class="primary" id="studyMic" type="button" aria-label="Activar micrófono para practicar lectura en inglés">🎙️ ACTIVAR MICRÓFONO · LEER EN VOZ ALTA</button>
+        <button class="primary" id="studyMic" type="button" aria-label="Activar micrófono para leer la pregunta en inglés">🎙️ ACTIVAR MICRÓFONO · LEER LA PREGUNTA</button>
         <button class="secondary" id="studyStop" type="button" disabled>Detener</button>
       </div>
-      <div id="studyStatus" class="small mic-status" role="status" aria-live="polite">Presiona “Activar micrófono” y lee la oración completa en inglés.</div>
+      <div id="studyStatus" class="small mic-status" role="status" aria-live="polite">Presiona “Activar micrófono” y lee la pregunta completa en inglés.</div>
       <div id="studyResult" class="small" style="margin-top:8px"></div>
       <div class="actions"><button class="secondary" id="studyRetry" type="button">↻ Intentar otra vez</button><button class="secondary" id="studyNext" type="button">Siguiente frase →</button></div>
       <p class="small">El uso del micrófono requiere permiso y compatibilidad del navegador. En iPhone, abre la aplicación en Safari y permite el acceso al micrófono cuando se solicite.</p>
@@ -167,13 +167,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <div class="question" id="writePrompt">The United States has fifty states.</div>
     <div class="small" id="writeTranslation">Estados Unidos tiene cincuenta estados.</div>
     <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar frase</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writeNew">Siguiente frase →</button></div>
-    <label for="written">Escribe la frase en inglés o dicta tu respuesta con el micrófono</label>
+    <label for="written">Escribe la frase en inglés</label>
     <input id="written" placeholder="Type the sentence here">
     <div class="actions">
-      <button class="secondary" id="writeMic" type="button">🎙️ Dictar en inglés</button>
       <button class="primary" id="checkWriting">Revisar escritura</button>
     </div>
-    <div id="writeMicStatus" class="small mic-status" role="status" aria-live="polite">Pulsa “Dictar en inglés” y di la frase para colocarla en el espacio de escritura.</div>
     <div id="writeFeedback" class="status"></div>
     <div class="answer" id="comprehension" style="display:block">
       <b id="writeQuestion">How many states does the United States have?</b>
@@ -564,6 +562,7 @@ function renderWriting(){
  $('wcounter').textContent=`Frase ${wi+1} de ${writingItems.length}`;
  $('wbar').style.width=((wi+1)/writingItems.length*100)+'%';
  $('writePrompt').textContent=item[0];$('writeTranslation').textContent=item[1];
+ studyIndex=wi;renderStudyPractice();
  $('writeQuestion').textContent=item[2];$('writeQuestionEs').textContent=item[4];
  $('writeAnswer').textContent='';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
 }
@@ -586,7 +585,7 @@ function compareReading(target,spoken){
 function renderStudyPractice(){
  $('studyCounter').textContent=`Práctica de micrófono: frase ${studyIndex+1} de ${writingItems.length}`;
  $('studySentence').textContent=writingItems[studyIndex][0];
- $('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa en inglés.';
+ $('studyStatus').textContent='Presiona “Activar micrófono” y lee la pregunta completa en inglés.';
  $('studyResult').textContent='';
 }
 $('studyListen').onclick=()=>speak(writingItems[studyIndex][0],'en-US');
@@ -598,16 +597,16 @@ $('studyMic').onclick=()=>{
  let recognition;
  try{recognition=new SR();}catch(error){$('studyStatus').textContent='No se pudo preparar el micrófono. Abre la aplicación en Safari y vuelve a intentarlo.';return;}
  studyRecognition=recognition;recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=1;recognition.continuous=false;
- $('studyMic').disabled=true;$('studyStop').disabled=false;$('studyResult').textContent='';$('studyStatus').textContent='🎙️ Micrófono activado. Habla ahora y lee la oración completa en inglés.';
+ $('studyMic').disabled=true;$('studyStop').disabled=false;$('studyResult').textContent='';$('studyStatus').textContent='🎙️ Micrófono activado. Habla ahora y lee la pregunta completa en inglés.';
  recognition.onresult=(event)=>{
    const spoken=event.results&&event.results[0]&&event.results[0][0]?event.results[0][0].transcript:'';
-   const target=writingItems[studyIndex][0];const score=compareReading(target,spoken);
+   const target=writingItems[studyIndex][2];const score=compareReading(target,spoken);
    $('studyResult').innerHTML='<b>El micrófono reconoció:</b> '+escapeHTML(spoken)+'<br><b>Lectura esperada:</b> '+escapeHTML(target)+'<br><b>Coincidencia aproximada:</b> '+score+'%';
    $('studyStatus').textContent=score>=90?'¡Excelente! Tu lectura coincide muy bien.':score>=65?'¡Buen intento! Practica las palabras que faltaron.':'Sigue practicando: escucha la frase y léela más despacio.';
  };
  recognition.onnomatch=()=>{$('studyStatus').textContent='No pude reconocer las palabras. Acerca el teléfono y vuelve a leer despacio.';};
  recognition.onerror=(event)=>{
-   const messages={'not-allowed':'Permiso denegado. Autoriza el micrófono para Safari en los ajustes del iPhone.','service-not-allowed':'El servicio de reconocimiento de voz no está disponible. Intenta desde Safari.','audio-capture':'No se encontró un micrófono disponible.','no-speech':'No detecté voz. Toca el botón y lee la oración en inglés.','network':'El reconocimiento necesita conexión a internet. Revisa tu conexión.'};
+   const messages={'not-allowed':'Permiso denegado. Autoriza el micrófono para Safari en los ajustes del iPhone.','service-not-allowed':'El servicio de reconocimiento de voz no está disponible. Intenta desde Safari.','audio-capture':'No se encontró un micrófono disponible.','no-speech':'No detecté voz. Toca el botón y lee la pregunta en inglés.','network':'El reconocimiento necesita conexión a internet. Revisa tu conexión.'};
    $('studyStatus').textContent=messages[event.error]||'No pude reconocer la lectura. Revisa el permiso del micrófono e intenta otra vez.';
  };
  recognition.onend=()=>{if(studyRecognition===recognition)studyRecognition=null;$('studyMic').disabled=false;$('studyStop').disabled=true;};
@@ -615,27 +614,9 @@ $('studyMic').onclick=()=>{
 };
 $('studyStop').onclick=()=>{if(studyRecognition){try{studyRecognition.stop()}catch(e){}}};
 $('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa.';};
-$('studyNext').onclick=()=>{studyIndex=(studyIndex+1)%writingItems.length;renderStudyPractice();};
+$('studyNext').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting();};
 
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
-$('writeMic').onclick=()=>{
- const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){$('writeMicStatus').textContent='El dictado por micrófono no está disponible en este navegador. Puedes escribir la frase manualmente.';return;}
- const recognition=new SR();
- recognition.lang='en-US';recognition.interimResults=false;recognition.maxAlternatives=1;
- $('writeMic').disabled=true;
- $('writeMicStatus').textContent='Escuchando… di la frase completa en inglés.';
- recognition.onresult=(event)=>{
-   const spoken=event.results[0][0].transcript;
-   $('written').value=spoken;
-   $('writeMicStatus').textContent='El micrófono escribió: “'+spoken+'”. Ahora pulsa “Revisar escritura”.';
- };
- recognition.onerror=(event)=>{
-   $('writeMicStatus').textContent=event.error==='not-allowed'?'No hay permiso para usar el micrófono. Activa el permiso en Safari.':'No pude reconocer la frase. Intenta otra vez o escribe la respuesta.';
- };
- recognition.onend=()=>{$('writeMic').disabled=false;};
- try{recognition.start();}catch(error){$('writeMicStatus').textContent='No se pudo iniciar el micrófono. Espera un momento e intenta otra vez.';$('writeMic').disabled=false;}
-};
 $('checkWriting').onclick=()=>{let expected=writingItems[wi][0].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
 $('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Answer:</b> '+writingItems[wi][3]+'<br><span class="small">Respuesta: '+writingItems[wi][5]+'</span>'};
 $('writeListenEs').onclick=()=>speak(writingItems[wi][1],'es-US');
