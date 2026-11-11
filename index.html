@@ -152,6 +152,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 
     <div class="answer" id="studyModePanel" style="display:block; margin:12px 0 16px">
       <h3>🎙️ 1. LEE LA PREGUNTA EN INGLÉS</h3>
+      <div class="small" id="studyCounter">Práctica de micrófono: frase 1</div>
       <p class="small">Primero lee la pregunta en voz alta. Puedes escucharla y practicar la pronunciación con el micrófono.</p>
       <div class="question" id="studySentence">Who is on the dollar bill?</div>
       <div class="actions">
@@ -614,7 +615,6 @@ $('studyMic').onclick=()=>{
 };
 $('studyStop').onclick=()=>{if(studyRecognition){try{studyRecognition.stop()}catch(e){}}};
 $('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').textContent='Presiona “Activar micrófono” y lee la oración completa.';};
-$('studyNext').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting();};
 
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
 $('checkWriting').onclick=()=>{const normalizeAnswer=value=>String(value||'').toLowerCase().replace(/[^a-z0-9' ]/gi,' ').replace(/\s+/g,' ').trim();const expected=normalizeAnswer(writingItems[wi][3]);const got=normalizeAnswer($('written').value);if(!got){$('writeFeedback').textContent='Escribe tu respuesta antes de revisarla.';$('writeFeedback').className='status wrong';return;}const correct=got===expected;$('writeFeedback').textContent=correct?'¡Muy bien! Tu respuesta está correcta.':'Todavía hay algunos errores. Inténtalo otra vez o pulsa «Ver cómo se escribe la respuesta».';$('writeFeedback').className='status '+(correct?'correct':'wrong')};
