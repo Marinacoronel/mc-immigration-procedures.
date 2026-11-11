@@ -147,37 +147,38 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <option value="short">Versión corta · 43 preguntas y respuestas</option>
       <option value="long">Versión larga · 40 oraciones avanzadas</option>
     </select>
-    <div class="answer" id="studyModePanel" style="display:block; margin-bottom:16px">
-      <h3>🎙️ PRÁCTICA DE LECTURA CON MICRÓFONO</h3>
-      <p class="small">Lee en voz alta la PREGUNTA en inglés que aparece aquí. Por ejemplo: “Who is on the dollar bill?”. Pulsa “ACTIVAR MICRÓFONO” para que la aplicación escuche tu pronunciación y la compare con la pregunta correcta. No dictes la respuesta.</p>
-      <div class="small" id="studyCounter">Práctica de lectura: pregunta 1 de 43</div>
-      <div class="question" id="studySentence">The United States has fifty states.</div>
+    <div class="progress"><div id="wbar"></div></div>
+    <div class="small" id="wcounter">Pregunta 1 de 43</div>
+
+    <div class="answer" id="studyModePanel" style="display:block; margin:12px 0 16px">
+      <h3>🎙️ 1. LEE LA PREGUNTA EN INGLÉS</h3>
+      <p class="small">Primero lee la pregunta en voz alta. Puedes escucharla y practicar la pronunciación con el micrófono.</p>
+      <div class="question" id="studySentence">Who is on the dollar bill?</div>
       <div class="actions">
-        <button class="secondary" id="studyListen" type="button">🔊 Escuchar oración</button>
-        <button class="primary" id="studyMic" type="button" aria-label="Activar micrófono para leer la pregunta en inglés">🎙️ ACTIVAR MICRÓFONO · LEER LA PREGUNTA</button>
+        <button class="secondary" id="studyListen" type="button">🔊 Escuchar pregunta</button>
+        <button class="primary" id="studyMic" type="button" aria-label="Activar micrófono para leer la pregunta en inglés">🎙️ ACTIVAR MICRÓFONO</button>
         <button class="secondary" id="studyStop" type="button" disabled>Detener</button>
       </div>
       <div id="studyStatus" class="small mic-status" role="status" aria-live="polite">Presiona “Activar micrófono” y lee la pregunta completa en inglés.</div>
       <div id="studyResult" class="small" style="margin-top:8px"></div>
-      <div class="actions"><button class="secondary" id="studyRetry" type="button">↻ Intentar otra vez</button><button class="secondary" id="studyNext" type="button">Siguiente frase →</button></div>
-      <p class="small">El uso del micrófono requiere permiso y compatibilidad del navegador. En iPhone, abre la aplicación en Safari y permite el acceso al micrófono cuando se solicite.</p>
+      <div class="actions"><button class="secondary" id="studyRetry" type="button">↻ Intentar otra vez</button></div>
+      <p class="small">En iPhone, abre la aplicación en Safari y permite el acceso al micrófono cuando se solicite.</p>
     </div>
-    <div class="progress"><div id="wbar"></div></div>
-    <div class="small" id="wcounter">Pregunta 1 de 43</div>
-    <div class="question" id="writePrompt">Who is on the dollar bill?</div>
-    <div class="small" id="writeTranslation">¿Quién aparece en el billete de un dólar?</div>
-    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar pregunta</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writeNew">Siguiente pregunta →</button></div>
-    <label for="written">Escribe la respuesta en inglés</label>
-    <input id="written" placeholder="Write your answer in English">
+
+    <h3>✍️ 2. ESCRIBE TU RESPUESTA EN INGLÉS</h3>
+    <div class="small" id="writeTranslation">Traducción de la pregunta en español</div>
+    <label for="written">Escribe aquí tu respuesta en inglés</label>
+    <input id="written" placeholder="Write your answer in English" autocomplete="off">
     <div class="actions">
-      <button class="primary" id="checkWriting">Revisar respuesta</button>
+      <button class="primary" id="checkWriting">Revisar mi respuesta</button>
+      <button class="secondary" id="showWriteAnswer">Ver cómo se escribe la respuesta</button>
     </div>
-    <div id="writeFeedback" class="status"></div>
-    <div class="answer" id="comprehension" style="display:block">
-      <b id="writeQuestion">Pregunta:</b>
-      <div class="small" id="writeQuestionEs"></div>
-      <div class="actions"><button class="secondary" id="showWriteAnswer">Mostrar respuesta correcta</button><button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button></div>
-      <div id="writeAnswer" class="small"></div>
+    <div id="writeFeedback" class="status" role="status" aria-live="polite"></div>
+    <div class="answer" id="writeAnswer" aria-live="polite"></div>
+    <div class="actions">
+      <button class="secondary" id="writeListenEs">🔊 Escuchar pregunta en español</button>
+      <button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button>
+      <button class="secondary" id="writeNew">Siguiente pregunta →</button>
     </div>
 
     <h3>Definiciones importantes para la entrevista</h3>
@@ -520,7 +521,7 @@ function speakSequence(items){
   };
   window.setTimeout(playNext,100);
 }
-$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak(writingItems[wi][2],'en-US');
+$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);
 function renderInterview(){$('icounter').textContent=`Pregunta ${ii+1} de ${interviews.length}`;$('iq').textContent=interviews[ii][0];$('ihint').textContent=interviews[ii][1];$('ianswer').value='';$('itip').style.display='none';$('ibar').style.width=((ii+1)/interviews.length*100)+'%'}
 $('inext').onclick=()=>{ii=(ii+1)%interviews.length;renderInterview()};$('ihintbtn').onclick=()=>{$('itip').textContent=interviews[ii][2];$('itip').style.display='block'};
 function renderPhrase(){$('phrase').textContent=phrases[pi][0];$('phraseEs').textContent=phrases[pi][1];$('speechResult').textContent='Tu práctica aparecerá aquí cuando uses el micrófono.'}
@@ -561,10 +562,9 @@ function renderWriting(){
  const item=writingItems[wi];
  $('wcounter').textContent=`Frase ${wi+1} de ${writingItems.length}`;
  $('wbar').style.width=((wi+1)/writingItems.length*100)+'%';
- $('writePrompt').textContent=item[2];$('writeTranslation').textContent=item[4];
+ $('writeTranslation').textContent=item[4];
  studyIndex=wi;renderStudyPractice();
- $('writeQuestion').textContent='Pregunta: '+item[2];$('writeQuestionEs').textContent=item[4];
- $('writeAnswer').textContent='';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
+ $('writeAnswer').textContent='';$('writeAnswer').style.display='none';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
 }
 
 // Modo estudio: reconocimiento de lectura en inglés cuando el navegador lo admite.
@@ -588,7 +588,7 @@ function renderStudyPractice(){
  $('studyStatus').textContent='Presiona “Activar micrófono” y lee la pregunta completa en inglés.';
  $('studyResult').textContent='';
 }
-$('studyListen').onclick=()=>speak(writingItems[studyIndex][0],'en-US');
+$('studyListen').onclick=()=>speak(writingItems[studyIndex][2],'en-US');
 function stopStudyRecognition(){if(studyRecognition){try{studyRecognition.stop()}catch(e){} studyRecognition=null;} $('studyMic').disabled=false;$('studyStop').disabled=true;}
 $('studyMic').onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -617,8 +617,8 @@ $('studyRetry').onclick=()=>{$('studyResult').textContent='';$('studyStatus').te
 $('studyNext').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting();};
 
 $('writeNew').onclick=()=>{wi=(wi+1)%writingItems.length;renderWriting()};
-$('checkWriting').onclick=()=>{let expected=writingItems[wi][3].trim().replace(/[.!?]$/,'').toLowerCase();let got=$('written').value.trim().replace(/[.!?]$/,'').toLowerCase();$('writeFeedback').textContent=got===expected?'¡Muy bien! La frase coincide.':'Sigue practicando. Revisa mayúsculas, palabras y orden de la frase.';$('writeFeedback').className='status '+(got===expected?'correct':'wrong')};
-$('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Answer:</b> '+writingItems[wi][3]+'<br><span class="small">Respuesta: '+writingItems[wi][5]+'</span>'};
+$('checkWriting').onclick=()=>{const normalizeAnswer=value=>String(value||'').toLowerCase().replace(/[^a-z0-9' ]/gi,' ').replace(/\s+/g,' ').trim();const expected=normalizeAnswer(writingItems[wi][3]);const got=normalizeAnswer($('written').value);if(!got){$('writeFeedback').textContent='Escribe tu respuesta antes de revisarla.';$('writeFeedback').className='status wrong';return;}const correct=got===expected;$('writeFeedback').textContent=correct?'¡Muy bien! Tu respuesta está correcta.':'Todavía hay algunos errores. Inténtalo otra vez o pulsa «Ver cómo se escribe la respuesta».';$('writeFeedback').className='status '+(correct?'correct':'wrong')};
+$('showWriteAnswer').onclick=()=>{$('writeAnswer').innerHTML='<b>Respuesta correcta en inglés:</b> '+escapeHTML(writingItems[wi][3])+'<br><span class="small"><b>Traducción al español:</b> '+escapeHTML(writingItems[wi][5])+'</span>';$('writeAnswer').style.display='block'};
 $('writeListenEs').onclick=()=>speak(writingItems[wi][4],'es-US');
 $('listenWriteQA').onclick=()=>speakSequence([{text:'Question. '+writingItems[wi][2],lang:'en-US'},{text:'Pregunta. '+writingItems[wi][4],lang:'es-US'},{text:'Answer. '+writingItems[wi][3],lang:'en-US'},{text:'Respuesta. '+writingItems[wi][5],lang:'es-US'}]);
 $('definitionsList').innerHTML=definitions.map(([term,meaning,translation])=>'<div class="definition"><b>Palabra en inglés: '+escapeHTML(term)+'</b><div class="small"><b>Meaning in English:</b> '+escapeHTML(meaning)+'</div><div class="small spanish-translation"><b>Traducción al español:</b> '+escapeHTML(translation)+'</div></div>').join('');
