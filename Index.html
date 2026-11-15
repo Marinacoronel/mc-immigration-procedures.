@@ -56,6 +56,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 .payment-thanks{display:none;background:#eef8f1;border:1px solid #a9d8b8;border-radius:12px;padding:16px;margin:14px 0;text-align:left}
 .payment-thanks h3{color:var(--green);margin-bottom:8px}
 
+.tab{min-height:48px}#simulation .answer{border-left:4px solid var(--gold)}#simPrev:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -86,7 +87,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <div class="tabs">
     <button class="tab active" data-view="civics">Cívica</button>
     <button class="tab" data-view="interview">Entrevista N-400</button>
-    <button class="tab" data-view="english">Inglés práctico</button>
+    <button class="tab" data-view="simulation">Simulacro USCIS</button>
     <button class="tab" data-view="writing">Lectura y escritura</button>
   </div>
   <section id="civics" class="panel">
@@ -126,6 +127,35 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <button class="primary" id="inext">Siguiente →</button>
     </div>
     <div class="answer" id="itip"></div>
+  </section>
+  <section id="simulation" class="panel hidden">
+    <h2>Simulacro de entrevista de ciudadanía USCIS</h2>
+    <p class="small">Practica una entrevista educativa paso a paso con una entrevistadora virtual. Escucha cada pregunta en inglés, consulta su traducción y responde hablando o escribiendo. No es una entrevista oficial ni garantiza la aprobación.</p>
+    <div class="answer" style="display:block;margin-bottom:14px">
+      <div class="small">👩‍💼 Entrevistadora virtual · MC Immigration Procedures</div>
+      <div class="question" id="simOfficer">Good morning. Please come in.</div>
+      <div class="small" id="simSpanish">Buenos días. Por favor, pase.</div>
+    </div>
+    <div class="progress"><div id="simBar"></div></div>
+    <div class="small" id="simCounter">Etapa 1 de 11</div>
+    <h3 id="simStageTitle">1. Llamada desde la sala de espera</h3>
+    <div class="question" id="simQuestion"></div>
+    <div class="small" id="simQuestionEs"></div>
+    <div class="actions">
+      <button class="secondary" id="simListen">🔊 Escuchar en inglés</button>
+      <button class="secondary" id="simListenEs">🔊 Escuchar en español</button>
+      <button class="secondary" id="simMic">🎙️ Responder con micrófono</button>
+    </div>
+    <div class="small" id="simMicStatus" role="status" aria-live="polite">También puedes escribir tu respuesta abajo.</div>
+    <label for="simAnswer">Tu respuesta en inglés</label>
+    <input id="simAnswer" placeholder="Type or speak your answer in English…">
+    <div class="actions">
+      <button class="secondary" id="simSample">Ver ejemplo de respuesta</button>
+      <button class="secondary" id="simPrev">← Anterior</button>
+      <button class="primary" id="simNext">Siguiente →</button>
+    </div>
+    <div class="answer" id="simModelAnswer" style="display:none"></div>
+    <p class="small">Importante: Las respuestas personales deben ser verdaderas y coincidir con tu Formulario N-400. Los ejemplos son únicamente modelos de práctica. No escribas tu número de Seguro Social ni otros datos sensibles.</p>
   </section>
   <section id="english" class="panel hidden">
     <h2>Inglés práctico: escucha y habla</h2>
@@ -448,7 +478,7 @@ const writingLongItems=[["New York City has the largest population of any city i
 let writingItems=writingShortItems;
 let qi=0, order=[], ii=0, pi=0, wi=0;
 const $=id=>document.getElementById(id);
-function setView(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['civics','interview','english','writing'].forEach(id=>$(id).classList.toggle('hidden',id!==v));}
+function setView(v){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['civics','interview','simulation','english','writing'].forEach(id=>$(id).classList.toggle('hidden',id!==v));}
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 function bank(){return banks[$('version').value]}
 function initOrder(){order=bank().map((_,i)=>i);qi=0;renderQ()}
@@ -627,6 +657,56 @@ $('writeListenEs').onclick=()=>speak(writingItems[wi][4],'es-US');
 $('listenWriteQA').onclick=()=>speakSequence([{text:'Question. '+writingItems[wi][2],lang:'en-US'},{text:'Pregunta. '+writingItems[wi][4],lang:'es-US'},{text:'Answer. '+writingItems[wi][3],lang:'en-US'},{text:'Respuesta. '+writingItems[wi][5],lang:'es-US'}]);
 $('definitionsList').innerHTML=definitions.map(([term,meaning,translation])=>'<div class="definition"><b>Palabra en inglés: '+escapeHTML(term)+'</b><div class="small"><b>Meaning in English:</b> '+escapeHTML(meaning)+'</div><div class="small spanish-translation"><b>Traducción al español:</b> '+escapeHTML(translation)+'</div></div>').join('');
 
+// Simulación educativa en 11 etapas.
+const simulationStages=[
+{title:"1. Llamada desde la sala de espera",officer:"Good morning. Please come with me.",officerEs:"Buenos días. Por favor, venga conmigo.",question:"Please come with me.",es:"Por favor, venga conmigo.",model:"You may say: “Good morning.” / Puede responder: «Buenos días»."},
+{title:"2. Entrada a la oficina de USCIS",officer:"Good morning. Please have a seat.",officerEs:"Buenos días. Por favor, tome asiento.",question:"Please have a seat.",es:"Por favor, tome asiento.",model:"You may say: “Thank you.” / Puede responder: «Gracias»."},
+{title:"3. Revisión de identidad",officer:"May I see your permanent resident card and identification, please?",officerEs:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",question:"May I see your permanent resident card and identification, please?",es:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",model:"You may say: “Of course. Here they are.” / «Por supuesto. Aquí están»."},
+{title:"4. Juramento inicial de decir la verdad",officer:"Do you promise to tell the truth during this interview?",officerEs:"¿Promete decir la verdad durante esta entrevista?",question:"Do you promise to tell the truth during this interview?",es:"¿Promete decir la verdad durante esta entrevista?",model:"Answer truthfully. Example: “Yes, I do.” / Responda con sinceridad. Ejemplo: «Sí, lo prometo»."},
+{title:"5. Preguntas personales del Formulario N-400",officer:"What is your full legal name?",officerEs:"¿Cuál es su nombre legal completo?",question:"What is your full legal name?",es:"¿Cuál es su nombre legal completo?",model:"Personal answer. Example: “My full legal name is [your full legal name].” / Respuesta personal: use su nombre legal completo."},
+{title:"6. Elegibilidad y preguntas de seguridad",officer:"Have you ever claimed to be a U.S. citizen?",officerEs:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",question:"Have you ever claimed to be a U.S. citizen?",es:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",model:"Answer Yes or No truthfully based on your own history. If yes, be prepared to explain. / Responda Sí o No según su historial real."},
+{title:"7. Definiciones y comprensión de conceptos",officer:"What does the word “oath” mean?",officerEs:"¿Qué significa la palabra «juramento»?",question:"What does the word “oath” mean?",es:"¿Qué significa la palabra «juramento»?",model:"“A promise to tell the truth.” / «Una promesa de decir la verdad»."},
+{title:"8. Examen de educación cívica",dynamic:"civics"},
+{title:"9. Prueba de lectura en inglés",dynamic:"reading"},
+{title:"10. Prueba de escritura en inglés",dynamic:"writing"},
+{title:"11. Revisión final del formulario y despedida",officer:"Do you have any questions for me?",officerEs:"¿Tiene alguna pregunta para mí?",question:"Do you have any questions for me?",es:"¿Tiene alguna pregunta para mí?",model:"If you do not have questions, you may say: “No, thank you.” / Si no tiene preguntas: «No, gracias»."}
+];
+let simStage=0,simRecognition=null;
+function getSimulationItem(){
+ const st=simulationStages[simStage];
+ if(st.dynamic==="civics"){const it=bank()[order[qi]??0];return {officer:"Now I will ask you a civics question.",officerEs:"Ahora le haré una pregunta de educación cívica.",question:it[0],es:it[1],model:"Accepted answer(s): "+it[2]+" / Respuesta(s) aceptada(s): "+it[3]};}
+ if(st.dynamic==="reading"){const it=writingItems[wi%writingItems.length];return {officer:"Please read this sentence aloud.",officerEs:"Por favor, lea esta oración en voz alta.",question:it[0],es:it[1],model:"Practice reading the sentence clearly. / Practique leyendo la oración con claridad."};}
+ if(st.dynamic==="writing"){const it=writingItems[wi%writingItems.length];return {officer:"Please write this sentence.",officerEs:"Por favor, escriba esta oración.",question:it[3],es:it[5],model:"Correct sentence: "+it[3]+" / Oración correcta: "+it[5]};}
+ return st;
+}
+function renderSimulation(){
+ const st=simulationStages[simStage],it=getSimulationItem();
+ $("simCounter").textContent=`Etapa ${simStage+1} de ${simulationStages.length}`;
+ $("simBar").style.width=((simStage+1)/simulationStages.length*100)+"%";
+ $("simStageTitle").textContent=st.title;$("simOfficer").textContent=it.officer;$("simSpanish").textContent=it.officerEs;
+ $("simQuestion").textContent=it.question;$("simQuestionEs").textContent=it.es;$("simAnswer").value="";
+ $("simModelAnswer").style.display="none";$("simModelAnswer").textContent="";
+ $("simMicStatus").textContent="También puedes escribir tu respuesta abajo.";
+ $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===10?"Reiniciar simulacro ↻":"Siguiente →";
+}
+$("simListen").onclick=()=>speak(getSimulationItem().question,"en-US");
+$("simListenEs").onclick=()=>speak(getSimulationItem().es,"es-US");
+$("simSample").onclick=()=>{$("simModelAnswer").textContent=getSimulationItem().model;$("simModelAnswer").style.display="block";};
+$("simPrev").onclick=()=>{if(simStage>0){simStage--;renderSimulation();}};
+$("simNext").onclick=()=>{simStage=simStage===10?0:simStage+1;renderSimulation();};
+$("simMic").onclick=()=>{
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){$("simMicStatus").textContent="El reconocimiento de voz no está disponible en este navegador. Puedes escribir tu respuesta.";return;}
+ try{
+  if(simRecognition){simRecognition.stop();simRecognition=null;}
+  const rec=new SR();simRecognition=rec;rec.lang="en-US";rec.interimResults=false;rec.maxAlternatives=1;
+  $("simMicStatus").textContent="🎙️ Escuchando… responde en inglés.";
+  rec.onresult=e=>{$("simAnswer").value=e.results[0][0].transcript;$("simMicStatus").textContent="Respuesta reconocida. Revísala antes de continuar.";};
+  rec.onerror=()=>{$("simMicStatus").textContent="No pude escuchar la respuesta. Revisa el permiso del micrófono o escribe tu respuesta.";};
+  rec.onend=()=>{if(simRecognition===rec)simRecognition=null;};rec.start();
+ }catch(error){$("simMicStatus").textContent="No se pudo activar el micrófono. Intenta otra vez o escribe tu respuesta.";}
+};
+
 // Mostrar el agradecimiento únicamente cuando Stripe redirija a la aplicación
 // con ?payment=success después de completar el pago.
 if (new URLSearchParams(window.location.search).get('payment') === 'success') {
@@ -637,7 +717,7 @@ if (new URLSearchParams(window.location.search).get('payment') === 'success') {
   }
 }
 
-initOrder();renderInterview();renderPhrase();renderWriting();renderStudyPractice();
+initOrder();renderInterview();renderPhrase();renderWriting();renderStudyPractice();renderSimulation();
 </script>
 </body>
 </html>
