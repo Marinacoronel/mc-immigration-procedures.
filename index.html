@@ -102,8 +102,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   </section>
   <div class="tabs">
     <button class="tab active" data-view="civics">Cívica</button>
-    <button class="tab" data-view="interview">Entrevista N-400</button>
-    <button class="tab" data-view="simulation">Simulacro USCIS</button>
+    <button class="tab" data-view="interview">N400</button>
+    <button class="tab" data-view="simulation">Simulacro de entrevista USCIS</button>
     <button class="tab" data-view="writing">Lectura y escritura</button>
   </div>
   <section id="civics" class="panel">
@@ -141,7 +141,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     </div>
   </section>
   <section id="interview" class="panel hidden">
-    <h2>Simulador de entrevista N-400</h2>
+    <h2>N400</h2>
     <p class="small">Repaso educativo de las secciones del Formulario N-400, edición 01/20/25. No todas estas preguntas se hacen literalmente en cada entrevista. Practica contestar en inglés. No escribas números de Seguro Social ni otros datos sensibles.</p>
     <div class="progress"><div id="ibar"></div></div>
     <div class="small" id="icounter">Pregunta 1</div>
@@ -160,7 +160,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <div class="answer" id="itip"></div>
   </section>
   <section id="simulation" class="panel hidden">
-    <h2>Simulacro de entrevista de ciudadanía USCIS</h2>
+    <h2>Simulacro de entrevista USCIS</h2>
     <p class="small">Practica una entrevista educativa paso a paso con una entrevistadora virtual. Escucha cada pregunta en inglés, consulta su traducción y responde hablando o escribiendo. No es una entrevista oficial ni garantiza la aprobación.</p>
     <div class="officer-stage" aria-label="Ilustración animada de la entrevistadora virtual">
       <div class="officer-avatar" id="officerAvatar" aria-hidden="true"><div class="hair"></div><div class="face"><i class="eye left"></i><i class="eye right"></i><i class="nose"></i><i class="mouth"></i></div><div class="neck"></div><div class="jacket"></div><div class="collar"></div></div>
@@ -177,9 +177,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <button class="secondary" id="simMic">🎙️ Responder con micrófono</button>
     </div>
     <div class="small" id="simMicStatus" role="status" aria-live="polite">También puedes escribir tu respuesta abajo.</div>
-    <label for="simAnswer">Tu respuesta en inglés</label>
+    <label for="simAnswer">Your answer in English</label>
     <input id="simAnswer" placeholder="Type or speak your answer in English…">
+    <div class="status" id="simGrade" role="status" aria-live="polite"></div>
     <div class="actions">
+      <button class="primary hidden" id="simCheck">Check answer ✓</button>
       <button class="secondary" id="simSample">Ver ejemplo de respuesta</button>
       <button class="secondary" id="simPrev">← Anterior</button>
       <button class="primary" id="simNext">Siguiente →</button>
@@ -788,13 +790,18 @@ const simulationStages=[
 {title:"19. Comprensión del Juramento de Lealtad",officer:"Do you understand the full Oath of Allegiance to the United States?",officerEs:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",question:"Do you understand the full Oath of Allegiance to the United States?",es:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",model:"Answer truthfully. You may ask the officer to explain any words you do not understand. / Responda con sinceridad y pida que le expliquen cualquier palabra que no entienda."},
 {title:"20. Disposición a tomar el juramento",officer:"Are you willing to take the Oath of Allegiance?",officerEs:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",question:"Are you willing to take the Oath of Allegiance?",es:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",model:"Answer according to your sincere beliefs. If you have a religious or conscientious concern, seek qualified legal advice before the interview. / Responda según sus convicciones."},
 {title:"21. Servicio al país si la ley lo exige",officer:"If the law requires it, are you willing to perform service of national importance under civilian direction?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",question:"If the law requires it, are you willing to perform service of national importance under civilian direction?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",model:"Answer truthfully. The N-400 also asks separately about bearing arms and noncombatant service if required by law. / Responda con sinceridad. El formulario también pregunta por separado sobre portar armas y el servicio no combatiente si la ley lo exige."},
-{title:"22. Educación cívica",dynamic:"civics"},
-{title:"23. Prueba de lectura en inglés",dynamic:"reading"},
+// 20 preguntas seleccionadas del banco de práctica 2025 (128 preguntas).
+...banks["2025"].slice(0,20).map((item,i)=>({
+ title:`Civics · Question ${i+1} of 20`,
+ dynamic:"simulationCivics",
+ civicsIndex:i
+})),
+{title:"Prueba de lectura en inglés",dynamic:"reading"},
 {title:"24. Prueba de escritura en inglés",dynamic:"writing"}
 ];
 // Todas las preguntas adicionales de la N-400 se integran dentro de la entrevista,
 // antes de educación cívica, lectura y escritura; no quedan después de la despedida.
-const interviewQuestionsIndex=simulationStages.findIndex(stage=>stage.dynamic==="civics");
+const interviewQuestionsIndex=simulationStages.findIndex(stage=>stage.dynamic==="simulationCivics");
 simulationStages.splice(interviewQuestionsIndex,0,...n400EverQuestions.map(([q,es,hint],i)=>({
  title:`N-400 · Have you EVER · ${i+1} de ${n400EverQuestions.length}`,
  custom:{officer:q,officerEs:es,question:q,es,model:hint+" Answer Yes or No truthfully. / Responda Sí o No con sinceridad."}
@@ -809,7 +816,10 @@ let simStage=0,simRecognition=null;
 function getSimulationItem(){
  const st=simulationStages[simStage];
  if(st.custom)return st.custom;
- if(st.dynamic==="civics"){const it=bank()[order[qi]??0];return {officer:"Now I will ask you a civics question.",officerEs:"Ahora le haré una pregunta de educación cívica.",question:it[0],es:it[1],model:"Accepted answer(s): "+it[2]+" / Respuesta(s) aceptada(s): "+it[3]};}
+ if(st.dynamic==="simulationCivics"){
+   const it=banks["2025"][st.civicsIndex];
+   return {officer:it[0],officerEs:"",question:it[0],es:"",model:"Correct answer(s): "+it[2]};
+  }
  if(st.dynamic==="reading"){const target="Who is on the dollar bill?";return {officer:"Please read the following sentence: "+target,officerEs:"Por favor, lea la siguiente oración: ¿Quién aparece en el billete de un dólar?",question:target,es:"¿Quién aparece en el billete de un dólar?",model:"Read the sentence aloud and wait for the officer to continue. / Lea la oración en voz alta y espere a que la oficial continúe."};}
  if(st.dynamic==="writing"){const it=writingItems[wi%writingItems.length];return {officer:"Please write the following sentence: "+it[3],officerEs:"Por favor, escriba la siguiente oración: "+it[5],question:it[3],es:it[5],model:"Correct sentence: "+it[3]+" / Oración correcta: "+it[5]};}
  return st;
@@ -828,26 +838,49 @@ function renderSimulation(){
  $("simBar").style.width=((simStage+1)/simulationStages.length*100)+"%";
  $("simStageTitle").textContent=st.title;$("simOfficer").textContent=it.officer;$("simSpanish").textContent=it.officerEs;
  $("simQuestion").textContent=it.question;$("simQuestionEs").textContent=it.es;$("simAnswer").value="";
- $("simModelAnswer").style.display="none";$("simModelAnswer").textContent="";
- $("simMicStatus").textContent=st.dynamic==="reading"?"La oficial espera. Lee en voz alta la oración en inglés y después continúa.":st.dynamic==="writing"?"Escucha el dictado completo y escribe la oración en el espacio de respuesta.":"También puedes escribir tu respuesta abajo.";
- $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===simulationStages.length-1?"Reiniciar simulacro ↻":"Siguiente →";
+  $("simGrade").textContent="";$("simGrade").className="status";
+  $("simModelAnswer").style.display="none";$("simModelAnswer").textContent="";
+  const isCivics=st.dynamic==="simulationCivics";
+  $("simListenEs").classList.toggle("hidden",isCivics);
+  $("simCheck").classList.toggle("hidden",!isCivics);
+  $("simMicStatus").textContent=isCivics?"Listen to the officer and answer in English using the microphone or by typing.":st.dynamic==="reading"?"La oficial espera. Lee en voz alta la oración en inglés y después continúa.":st.dynamic==="writing"?"Escucha el dictado completo y escribe la oración en el espacio de respuesta.":"También puedes escribir tu respuesta abajo.";
+  $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===simulationStages.length-1?"Reiniciar simulacro ↻":"Siguiente →";
 }
 $("simListen").onclick=()=>speakOfficer(getSimulationItem().officer||getSimulationItem().question,"en-US");
 $("simListenEs").onclick=()=>speakOfficer(getSimulationItem().officerEs||getSimulationItem().es,"es-US");
 $("simSample").onclick=()=>{$("simModelAnswer").textContent=getSimulationItem().model;$("simModelAnswer").style.display="block";};
 $("simPrev").onclick=()=>{if(simStage>0){simStage--;renderSimulation();}};
 $("simNext").onclick=()=>{simStage=simStage===simulationStages.length-1?0:simStage+1;renderSimulation();};
+function gradeSimulationCivicsAnswer(){
+  const st=simulationStages[simStage];
+  if(!st||st.dynamic!=="simulationCivics")return;
+  const spoken=$("simAnswer").value.trim();
+  const it=banks["2025"][st.civicsIndex];
+  if(!spoken){$("simGrade").className="status wrong";$("simGrade").textContent="Please answer before checking.";return;}
+  const ok=answerMatch(it[2],spoken);
+  $("simGrade").className="status "+(ok?"correct":"wrong");
+  $("simGrade").innerHTML=(ok?"✓ CORRECT!":"✗ INCORRECT")+
+   "<br><b>Your answer:</b> "+escapeHTML(spoken)+
+   "<br><b>Correct answer:</b> "+escapeHTML(it[2]);
+  $("simMicStatus").textContent=ok?"Well done! Your answer was recognized as correct.":"Review the correct answer and try again.";
+}
+$("simCheck").onclick=gradeSimulationCivicsAnswer;
+$("simAnswer").addEventListener("keydown",e=>{if(e.key==="Enter"&&simulationStages[simStage]?.dynamic==="simulationCivics")gradeSimulationCivicsAnswer();});
 $("simMic").onclick=()=>{
- const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!SR){$("simMicStatus").textContent="El reconocimiento de voz no está disponible en este navegador. Puedes escribir tu respuesta.";return;}
- try{
-  if(simRecognition){simRecognition.stop();simRecognition=null;}
-  const rec=new SR();simRecognition=rec;rec.lang="en-US";rec.interimResults=false;rec.maxAlternatives=1;
-  $("simMicStatus").textContent="🎙️ Escuchando… responde en inglés.";
-  rec.onresult=e=>{$("simAnswer").value=e.results[0][0].transcript;$("simMicStatus").textContent="Respuesta reconocida. Revísala antes de continuar.";};
-  rec.onerror=()=>{$("simMicStatus").textContent="No pude escuchar la respuesta. Revisa el permiso del micrófono o escribe tu respuesta.";};
-  rec.onend=()=>{if(simRecognition===rec)simRecognition=null;};rec.start();
- }catch(error){$("simMicStatus").textContent="No se pudo activar el micrófono. Intenta otra vez o escribe tu respuesta.";}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$("simMicStatus").textContent="Speech recognition is not available in this browser. You can type your answer.";return;}
+  try{
+   if(simRecognition){simRecognition.stop();simRecognition=null;}
+   const rec=new SR();simRecognition=rec;rec.lang="en-US";rec.interimResults=false;rec.maxAlternatives=1;
+   $("simMicStatus").textContent="🎙️ Listening… answer in English.";
+   rec.onresult=e=>{
+    $("simAnswer").value=e.results[0][0].transcript;
+    if(simulationStages[simStage]?.dynamic==="simulationCivics")gradeSimulationCivicsAnswer();
+    else $("simMicStatus").textContent="Answer recognized. Review it before continuing.";
+   };
+   rec.onerror=()=>{$("simMicStatus").textContent="I could not hear your answer. Check microphone permission or type your answer.";};
+   rec.onend=()=>{if(simRecognition===rec)simRecognition=null;};rec.start();
+  }catch(error){$("simMicStatus").textContent="Could not activate the microphone. Please try again or type your answer.";}
 };
 
 // Mostrar el agradecimiento únicamente cuando Stripe redirija a la aplicación
