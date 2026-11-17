@@ -790,29 +790,28 @@ const simulationStages=[
 {title:"21. Servicio al país si la ley lo exige",officer:"If the law requires it, are you willing to perform service of national importance under civilian direction?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",question:"If the law requires it, are you willing to perform service of national importance under civilian direction?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",model:"Answer truthfully. The N-400 also asks separately about bearing arms and noncombatant service if required by law. / Responda con sinceridad. El formulario también pregunta por separado sobre portar armas y el servicio no combatiente si la ley lo exige."},
 {title:"22. Educación cívica",dynamic:"civics"},
 {title:"23. Prueba de lectura en inglés",dynamic:"reading"},
-{title:"24. Prueba de escritura en inglés",dynamic:"writing"},
-{title:"25. Revisión final y despedida",officer:"Do you have any questions for me?",officerEs:"¿Tiene alguna pregunta para mí?",question:"Do you have any questions for me?",es:"¿Tiene alguna pregunta para mí?",model:"If you do not have questions, you may say: “No, thank you.” / Si no tiene preguntas: «No, gracias»."}
+{title:"24. Prueba de escritura en inglés",dynamic:"writing"}
 ];
-// Las preguntas Have you EVER pertenecen al SIMULACRO USCIS, no a la pestaña N-400.
-simulationStages.push(...n400EverQuestions.map(([q,es,hint],i)=>({
+// Todas las preguntas adicionales de la N-400 se integran dentro de la entrevista,
+// antes de educación cívica, lectura y escritura; no quedan después de la despedida.
+const interviewQuestionsIndex=simulationStages.findIndex(stage=>stage.dynamic==="civics");
+simulationStages.splice(interviewQuestionsIndex,0,...n400EverQuestions.map(([q,es,hint],i)=>({
  title:`N-400 · Have you EVER · ${i+1} de ${n400EverQuestions.length}`,
  custom:{officer:q,officerEs:es,question:q,es,model:hint+" Answer Yes or No truthfully. / Responda Sí o No con sinceridad."}
 })));
+// Cierre solicitado: la pregunta 85 informa sobre la notificación de USCIS;
+// después, la oficial pregunta si el solicitante tiene alguna duda.
 simulationStages.push(
- {title:"N-400 · Constitución",custom:{officer:"Do you support the Constitution and the form of government of the United States?",officerEs:"¿Apoya la Constitución y la forma de gobierno de Estados Unidos?",question:"Do you support the Constitution and the form of government of the United States?",es:"¿Apoya la Constitución y la forma de gobierno de Estados Unidos?",model:"Answer truthfully according to your beliefs. / Responda sinceramente según sus convicciones."}},
- {title:"N-400 · Comprensión del Juramento",custom:{officer:"Do you understand the full Oath of Allegiance to the United States?",officerEs:"¿Entiende el Juramento de Lealtad completo a Estados Unidos?",question:"Do you understand the full Oath of Allegiance to the United States?",es:"¿Entiende el Juramento de Lealtad completo a Estados Unidos?",model:"Ask the officer to explain any words you do not understand. / Pida que le expliquen cualquier palabra que no entienda."}},
- {title:"N-400 · Disposición a prestar el Juramento",custom:{officer:"Are you willing to take the full Oath of Allegiance to the United States?",officerEs:"¿Está dispuesto/a a prestar el Juramento de Lealtad completo a Estados Unidos?",question:"Are you willing to take the full Oath of Allegiance to the United States?",es:"¿Está dispuesto/a a prestar el Juramento de Lealtad completo a Estados Unidos?",model:"Answer truthfully. / Responda con sinceridad."}},
- {title:"N-400 · Portar armas si la ley lo exige",custom:{officer:"If the law requires it, are you willing to bear arms on behalf of the United States?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a portar armas en defensa de Estados Unidos?",question:"If the law requires it, are you willing to bear arms on behalf of the United States?",es:"Si la ley lo exige, ¿está dispuesto/a a portar armas en defensa de Estados Unidos?",model:"Answer truthfully. If you have a religious or conscientious objection, seek qualified legal advice about possible modifications. / Responda con sinceridad y busque orientación legal si tiene objeciones religiosas o de conciencia."}},
- {title:"N-400 · Servicio no combatiente",custom:{officer:"If the law requires it, are you willing to perform noncombatant service in the U.S. Armed Forces?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar servicio no combatiente en las Fuerzas Armadas de Estados Unidos?",question:"If the law requires it, are you willing to perform noncombatant service in the U.S. Armed Forces?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar servicio no combatiente en las Fuerzas Armadas de Estados Unidos?",model:"Answer truthfully. / Responda con sinceridad."}},
- {title:"N-400 · Trabajo de importancia nacional",custom:{officer:"If the law requires it, are you willing to perform work of national importance under civilian direction?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar trabajo de importancia nacional bajo dirección civil?",question:"If the law requires it, are you willing to perform work of national importance under civilian direction?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar trabajo de importancia nacional bajo dirección civil?",model:"Answer truthfully. / Responda con sinceridad."}}
+ {title:"Pregunta 85 · Decisión del caso",custom:{officer:"USCIS will send you a notice by mail with the decision on your case. Please make sure your mailing address is up to date.",officerEs:"USCIS le enviará por correo una notificación con la decisión de su caso. Por favor, asegúrese de que su dirección postal esté actualizada.",question:"USCIS will send you a notice by mail with the decision on your case.",es:"USCIS le enviará por correo una notificación con la decisión de su caso.",model:"Keep your mailing address updated with USCIS and read every notice carefully. / Mantenga su dirección postal actualizada con USCIS y lea cuidadosamente cada notificación."}},
+ {title:"Pregunta final · Despedida",custom:{officer:"Do you have any questions?",officerEs:"¿Tiene alguna pregunta?",question:"Do you have any questions?",es:"¿Tiene alguna pregunta?",model:"If you do not have questions, you may say: No, thank you. / Si no tiene preguntas, puede decir: No, gracias."}}
 );
 let simStage=0,simRecognition=null;
 function getSimulationItem(){
  const st=simulationStages[simStage];
  if(st.custom)return st.custom;
  if(st.dynamic==="civics"){const it=bank()[order[qi]??0];return {officer:"Now I will ask you a civics question.",officerEs:"Ahora le haré una pregunta de educación cívica.",question:it[0],es:it[1],model:"Accepted answer(s): "+it[2]+" / Respuesta(s) aceptada(s): "+it[3]};}
- if(st.dynamic==="reading"){const it=writingItems[wi%writingItems.length];return {officer:"Please read the following sentence aloud.",officerEs:"Por favor, lea la siguiente oración en voz alta.",question:readingTarget(it),es:readingTranslation(it),model:"Practice reading the sentence clearly. / Practique leyendo la oración con claridad."};}
- if(st.dynamic==="writing"){const it=writingItems[wi%writingItems.length];return {officer:"Please write this sentence.",officerEs:"Por favor, escriba esta oración.",question:it[3],es:it[5],model:"Correct sentence: "+it[3]+" / Oración correcta: "+it[5]};}
+ if(st.dynamic==="reading"){const target="Who is on the dollar bill?";return {officer:"Please read the following sentence: "+target,officerEs:"Por favor, lea la siguiente oración: ¿Quién aparece en el billete de un dólar?",question:target,es:"¿Quién aparece en el billete de un dólar?",model:"Read the sentence aloud and wait for the officer to continue. / Lea la oración en voz alta y espere a que la oficial continúe."};}
+ if(st.dynamic==="writing"){const it=writingItems[wi%writingItems.length];return {officer:"Please write the following sentence: "+it[3],officerEs:"Por favor, escriba la siguiente oración: "+it[5],question:it[3],es:it[5],model:"Correct sentence: "+it[3]+" / Oración correcta: "+it[5]};}
  return st;
 }
 function speakOfficer(text,lang){
@@ -830,11 +829,11 @@ function renderSimulation(){
  $("simStageTitle").textContent=st.title;$("simOfficer").textContent=it.officer;$("simSpanish").textContent=it.officerEs;
  $("simQuestion").textContent=it.question;$("simQuestionEs").textContent=it.es;$("simAnswer").value="";
  $("simModelAnswer").style.display="none";$("simModelAnswer").textContent="";
- $("simMicStatus").textContent="También puedes escribir tu respuesta abajo.";
+ $("simMicStatus").textContent=st.dynamic==="reading"?"La oficial espera. Lee en voz alta la oración en inglés y después continúa.":st.dynamic==="writing"?"Escucha el dictado completo y escribe la oración en el espacio de respuesta.":"También puedes escribir tu respuesta abajo.";
  $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===simulationStages.length-1?"Reiniciar simulacro ↻":"Siguiente →";
 }
-$("simListen").onclick=()=>speakOfficer(getSimulationItem().question,"en-US");
-$("simListenEs").onclick=()=>speakOfficer(getSimulationItem().es,"es-US");
+$("simListen").onclick=()=>speakOfficer(getSimulationItem().officer||getSimulationItem().question,"en-US");
+$("simListenEs").onclick=()=>speakOfficer(getSimulationItem().officerEs||getSimulationItem().es,"es-US");
 $("simSample").onclick=()=>{$("simModelAnswer").textContent=getSimulationItem().model;$("simModelAnswer").style.display="block";};
 $("simPrev").onclick=()=>{if(simStage>0){simStage--;renderSimulation();}};
 $("simNext").onclick=()=>{simStage=simStage===simulationStages.length-1?0:simStage+1;renderSimulation();};
