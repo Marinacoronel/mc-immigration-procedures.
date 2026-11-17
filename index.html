@@ -46,6 +46,22 @@ select,input{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:11px;
 .definition{padding:9px 0;border-bottom:1px solid #e7edf4}.definition b{color:var(--navy)}.hidden{display:none!important}.status{font-weight:700;margin-top:10px}.correct{color:var(--green)}.wrong{color:var(--red)}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 @media(min-width:600px){.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}header h1{font-size:28px}}
+/* Entrevistadora ilustrada con animación de labios durante la voz */
+.officer-stage{display:flex;align-items:center;gap:14px;background:#f3f8fc;border:1px solid #d7e5f1;border-radius:14px;padding:14px;margin-bottom:12px}
+.officer-avatar{position:relative;flex:0 0 104px;width:104px;height:126px;overflow:hidden;border-radius:48% 48% 16px 16px;background:linear-gradient(#d9e8f4 0 62%,#123b5d 62%);}
+.officer-avatar .hair{position:absolute;left:19px;top:5px;width:68px;height:72px;border-radius:48% 48% 35% 35%;background:#49352d}
+.officer-avatar .face{position:absolute;left:25px;top:19px;width:56px;height:69px;border-radius:45% 45% 48% 48%;background:#e9b995;z-index:1}
+.officer-avatar .eye{position:absolute;top:29px;width:5px;height:5px;border-radius:50%;background:#30251f}
+.officer-avatar .eye.left{left:13px}.officer-avatar .eye.right{right:13px}
+.officer-avatar .nose{position:absolute;left:26px;top:39px;width:5px;height:10px;border-right:1px solid #bd876e}
+.officer-avatar .mouth{position:absolute;left:20px;top:51px;width:16px;height:4px;border-radius:50%;background:#8d3e46}
+.officer-avatar.speaking .mouth{animation:lipTalk .16s infinite alternate}
+.officer-avatar .neck{position:absolute;left:45px;top:80px;width:17px;height:18px;background:#e9b995;z-index:0}
+.officer-avatar .collar{position:absolute;left:29px;top:91px;width:47px;height:30px;background:#fff;clip-path:polygon(0 0,50% 40%,100% 0,82% 100%,18% 100%);z-index:2}
+.officer-avatar .jacket{position:absolute;left:12px;bottom:-12px;width:80px;height:49px;border-radius:20px 20px 0 0;background:#173e5c;z-index:1}
+@keyframes lipTalk{from{height:3px;transform:scaleX(.8)}to{height:11px;transform:scaleX(1.1)}}
+@media(max-width:420px){.officer-stage{align-items:flex-start}.officer-avatar{flex-basis:88px;width:88px;height:112px;transform:scale(.9);transform-origin:top left;margin-right:-8px}}
+
 
 /* Acceso y pago de MC Immigration Procedures */
 .payment-panel{border:2px solid var(--gold);background:#fff;border-radius:16px;padding:18px;margin:0 0 14px;box-shadow:0 3px 15px #153b5d12;text-align:center}
@@ -131,10 +147,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <section id="simulation" class="panel hidden">
     <h2>Simulacro de entrevista de ciudadanía USCIS</h2>
     <p class="small">Practica una entrevista educativa paso a paso con una entrevistadora virtual. Escucha cada pregunta en inglés, consulta su traducción y responde hablando o escribiendo. No es una entrevista oficial ni garantiza la aprobación.</p>
-    <div class="answer" style="display:block;margin-bottom:14px">
-      <div class="small">👩‍💼 Entrevistadora virtual · MC Immigration Procedures</div>
-      <div class="question" id="simOfficer">Good morning. Please come in.</div>
-      <div class="small" id="simSpanish">Buenos días. Por favor, pase.</div>
+    <div class="officer-stage" aria-label="Ilustración animada de la entrevistadora virtual">
+      <div class="officer-avatar" id="officerAvatar" aria-hidden="true"><div class="hair"></div><div class="face"><i class="eye left"></i><i class="eye right"></i><i class="nose"></i><i class="mouth"></i></div><div class="neck"></div><div class="jacket"></div><div class="collar"></div></div>
+      <div><div class="small"><b>Entrevistadora virtual ilustrada · MC Immigration Procedures</b></div><div class="question" id="simOfficer">Good morning. Please come in.</div><div class="small" id="simSpanish">Buenos días. Por favor, pase.</div><div class="small" id="officerVoiceStatus" aria-live="polite">Pulsa “Escuchar en inglés” para oír a la entrevistadora.</div></div>
     </div>
     <div class="progress"><div id="simBar"></div></div>
     <div class="small" id="simCounter">Etapa 1 de 11</div>
@@ -198,7 +213,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <div class="small" id="wcounter">Pregunta 1 de 43</div>
     <div class="question" id="writePrompt">Who is on the dollar bill?</div>
     <div class="small" id="writeTranslation">¿Quién aparece en el billete de un dólar?</div>
-    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar pregunta</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="secondary" id="writePrev">← Anterior</button><button class="primary" id="writeNew">Siguiente pregunta →</button></div>
+    <div class="actions"><button class="secondary" id="writeListen">🔊 Escuchar pregunta</button><button class="secondary" id="writeListenEs">🔊 Escuchar en español</button><button class="primary" id="writeDictation">🎧 Escuchar dictado</button><button class="secondary" id="writePrev">← Anterior</button><button class="primary" id="writeNew">Siguiente pregunta →</button></div>
     <label for="written">Escribe la respuesta en inglés</label>
     <input id="written" placeholder="Write your answer in English">
     <div class="actions">
@@ -208,7 +223,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <div class="answer" id="comprehension" style="display:block">
       <b id="writeQuestion">Pregunta:</b>
       <div class="small" id="writeQuestionEs"></div>
-      <div class="actions"><button class="secondary" id="showWriteAnswer">Mostrar respuesta correcta</button><button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button></div>
+      <div class="actions"><button class="secondary" id="showWriteAnswer">Mostrar respuesta correcta</button><button class="secondary" id="listenWriteAnswer">🔊 Escuchar respuesta correcta</button><button class="secondary" id="listenWriteQA">🔊 Escuchar pregunta y respuesta</button></div>
       <div id="writeAnswer" class="small"></div>
     </div>
 
@@ -552,7 +567,9 @@ function speakSequence(items){
   };
   window.setTimeout(playNext,100);
 }
-$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak(writingItems[wi][2],'en-US');
+$('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak('Question. '+writingItems[wi][2],'en-US');
+$('writeDictation').onclick=()=>speak('Please write the following sentence. '+writingItems[wi][3],'en-US');
+$('listenWriteAnswer').onclick=()=>speakSequence([{text:writingItems[wi][3],lang:'en-US'},{text:writingItems[wi][5],lang:'es-US'}]);
 function renderInterview(){$('icounter').textContent=`Pregunta ${ii+1} de ${interviews.length}`;$('iq').textContent=interviews[ii][0];$('ihint').textContent=interviews[ii][1];$('ianswer').value='';$('itip').style.display='none';$('ibar').style.width=((ii+1)/interviews.length*100)+'%'}
 $('inext').onclick=()=>{ii=(ii+1)%interviews.length;renderInterview()};$('iprev').onclick=()=>{ii=(ii-1+interviews.length)%interviews.length;renderInterview()};$('ihintbtn').onclick=()=>{$('itip').textContent=interviews[ii][2];$('itip').style.display='block'};
 function renderPhrase(){$('phrase').textContent=phrases[pi][0];$('phraseEs').textContent=phrases[pi][1];$('speechResult').textContent='Tu práctica aparecerá aquí cuando uses el micrófono.'}
@@ -593,7 +610,7 @@ function renderWriting(){
  const item=writingItems[wi];
  $('wcounter').textContent=`Frase ${wi+1} de ${writingItems.length}`;
  $('wbar').style.width=((wi+1)/writingItems.length*100)+'%';
- $('writePrompt').textContent=item[2];$('writeTranslation').textContent=item[4];
+ $('writePrompt').textContent='Please write the following sentence.';$('writeTranslation').textContent='Instrucción: Escribe la oración que escucharás. '+item[4];
  studyIndex=wi;renderStudyPractice();
  $('writeQuestion').textContent='Pregunta: '+item[2];$('writeQuestionEs').textContent=item[4];
  $('writeAnswer').textContent='';$('written').value='';$('writeFeedback').textContent='';$('writeFeedback').className='status';
@@ -616,11 +633,11 @@ function compareReading(target,spoken){
 }
 function renderStudyPractice(){
  $('studyCounter').textContent=`Práctica de micrófono: frase ${studyIndex+1} de ${writingItems.length}`;
- $('studySentence').textContent=writingItems[studyIndex][2];
+ $('studySentence').textContent='Please read the following sentence: '+writingItems[studyIndex][2];
  $('studyStatus').textContent='Presiona “Activar micrófono” y lee la pregunta completa en inglés.';
  $('studyResult').textContent='';
 }
-$('studyListen').onclick=()=>speak(writingItems[studyIndex][0],'en-US');
+$('studyListen').onclick=()=>speak('Please read the following sentence. '+writingItems[studyIndex][2],'en-US');
 function stopStudyRecognition(){if(studyRecognition){try{studyRecognition.stop()}catch(e){} studyRecognition=null;} $('studyMic').disabled=false;$('studyStop').disabled=true;}
 $('studyMic').onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -660,24 +677,46 @@ $('definitionsList').innerHTML=definitions.map(([term,meaning,translation])=>'<d
 // Simulación educativa en 11 etapas.
 const simulationStages=[
 {title:"1. Llamada desde la sala de espera",officer:"Good morning. Please come with me.",officerEs:"Buenos días. Por favor, venga conmigo.",question:"Please come with me.",es:"Por favor, venga conmigo.",model:"You may say: “Good morning.” / Puede responder: «Buenos días»."},
-{title:"2. Entrada a la oficina de USCIS",officer:"Good morning. Please have a seat.",officerEs:"Buenos días. Por favor, tome asiento.",question:"Please have a seat.",es:"Por favor, tome asiento.",model:"You may say: “Thank you.” / Puede responder: «Gracias»."},
-{title:"3. Revisión de identidad",officer:"May I see your permanent resident card and identification, please?",officerEs:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",question:"May I see your permanent resident card and identification, please?",es:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",model:"You may say: “Of course. Here they are.” / «Por supuesto. Aquí están»."},
-{title:"4. Juramento inicial de decir la verdad",officer:"Do you promise to tell the truth during this interview?",officerEs:"¿Promete decir la verdad durante esta entrevista?",question:"Do you promise to tell the truth during this interview?",es:"¿Promete decir la verdad durante esta entrevista?",model:"Answer truthfully. Example: “Yes, I do.” / Responda con sinceridad. Ejemplo: «Sí, lo prometo»."},
-{title:"5. Preguntas personales del Formulario N-400",officer:"What is your full legal name?",officerEs:"¿Cuál es su nombre legal completo?",question:"What is your full legal name?",es:"¿Cuál es su nombre legal completo?",model:"Personal answer. Example: “My full legal name is [your full legal name].” / Respuesta personal: use su nombre legal completo."},
-{title:"6. Elegibilidad y preguntas de seguridad",officer:"Have you ever claimed to be a U.S. citizen?",officerEs:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",question:"Have you ever claimed to be a U.S. citizen?",es:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",model:"Answer Yes or No truthfully based on your own history. If yes, be prepared to explain. / Responda Sí o No según su historial real."},
-{title:"7. Definiciones y comprensión de conceptos",officer:"What does the word “oath” mean?",officerEs:"¿Qué significa la palabra «juramento»?",question:"What does the word “oath” mean?",es:"¿Qué significa la palabra «juramento»?",model:"“A promise to tell the truth.” / «Una promesa de decir la verdad»."},
-{title:"8. Examen de educación cívica",dynamic:"civics"},
-{title:"9. Prueba de lectura en inglés",dynamic:"reading"},
-{title:"10. Prueba de escritura en inglés",dynamic:"writing"},
-{title:"11. Revisión final del formulario y despedida",officer:"Do you have any questions for me?",officerEs:"¿Tiene alguna pregunta para mí?",question:"Do you have any questions for me?",es:"¿Tiene alguna pregunta para mí?",model:"If you do not have questions, you may say: “No, thank you.” / Si no tiene preguntas: «No, gracias»."}
+{title:"2. Entrada a la oficina",officer:"Good morning. Please come in and have a seat.",officerEs:"Buenos días. Por favor, pase y tome asiento.",question:"Please come in and have a seat.",es:"Por favor, pase y tome asiento.",model:"You may say: “Thank you.” / Puede responder: «Gracias»."},
+{title:"3. Revisión de identificación",officer:"May I see your permanent resident card and identification, please?",officerEs:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",question:"May I see your permanent resident card and identification, please?",es:"¿Puedo ver su tarjeta de residente permanente y su identificación, por favor?",model:"You may say: “Of course. Here they are.” / «Por supuesto. Aquí están»."},
+{title:"4. Levantarse para el juramento",officer:"Please stand up and raise your right hand.",officerEs:"Por favor, póngase de pie y levante la mano derecha.",question:"Please stand up and raise your right hand.",es:"Por favor, póngase de pie y levante la mano derecha.",model:"Follow the officer’s instruction. / Siga la instrucción de la oficial."},
+{title:"5. Promesa de decir la verdad",officer:"Do you promise to tell the truth during this interview?",officerEs:"¿Promete decir la verdad durante esta entrevista?",question:"Do you promise to tell the truth during this interview?",es:"¿Promete decir la verdad durante esta entrevista?",model:"Answer truthfully. Example: “Yes, I do.” / Responda con sinceridad: «Sí, lo prometo»."},
+{title:"6. Saludo y estado de ánimo",officer:"How are you today?",officerEs:"¿Cómo se encuentra hoy?",question:"How are you today?",es:"¿Cómo se encuentra hoy?",model:"Example: “I am fine, thank you.” / Ejemplo: «Estoy bien, gracias»."},
+{title:"7. Nombre legal completo",officer:"What is your full legal name?",officerEs:"¿Cuál es su nombre legal completo?",question:"What is your full legal name?",es:"¿Cuál es su nombre legal completo?",model:"Personal answer. Example: “My full legal name is [your full legal name].” Use your real information only in the actual interview. / Respuesta personal. Use su nombre legal."},
+{title:"8. Dirección actual",officer:"What is your current home address?",officerEs:"¿Cuál es su dirección actual?",question:"What is your current home address?",es:"¿Cuál es su dirección actual?",model:"Personal answer. Practice without entering your real address into a shared device. / Respuesta personal. No escriba su dirección real en un dispositivo compartido."},
+{title:"9. Direcciones anteriores de los últimos cinco años",officer:"What are your previous addresses for the last five years?",officerEs:"¿Cuáles fueron sus direcciones anteriores durante los últimos cinco años?",question:"What are your previous addresses for the last five years?",es:"¿Cuáles fueron sus direcciones anteriores durante los últimos cinco años?",model:"Review every address and the dates you lived there. / Repase todas las direcciones y las fechas correspondientes."},
+{title:"10. Hijos",officer:"Do you have any children?",officerEs:"¿Tiene hijos?",question:"Do you have any children?",es:"¿Tiene hijos?",model:"Example: “Yes, I have two children.” or “No, I do not have children.” Answer truthfully. / Responda según su situación real."},
+{title:"11. Nombres de los hijos",officer:"What are your children's full names?",officerEs:"¿Cuáles son los nombres completos de sus hijos?",question:"What are your children's full names?",es:"¿Cuáles son los nombres completos de sus hijos?",model:"If applicable, say each child’s full name. / Si corresponde, diga el nombre completo de cada hijo."},
+{title:"12. Número de teléfono",officer:"What is your phone number?",officerEs:"¿Cuál es su número de teléfono?",question:"What is your phone number?",es:"¿Cuál es su número de teléfono?",model:"Give the number listed on your application. Do not enter it on a public device. / Diga el número de su solicitud; no lo escriba en un dispositivo público."},
+{title:"13. Número de Seguro Social",officer:"What is your Social Security number?",officerEs:"¿Cuál es su número de Seguro Social?",question:"What is your Social Security number?",es:"¿Cuál es su número de Seguro Social?",model:"This is a sensitive personal number. Do not type or speak your real number in this practice app. Review it privately on your own application. / Es un dato sensible. No escriba ni diga su número real aquí."},
+{title:"14. Edad",officer:"How old are you?",officerEs:"¿Cuántos años tiene?",question:"How old are you?",es:"¿Cuántos años tiene?",model:"Example: “I am [your age] years old.” / Ejemplo: «Tengo [su edad] años»."},
+{title:"15. Cómo llegó a la entrevista",officer:"How did you get to the interview today?",officerEs:"¿Cómo llegó hoy a la entrevista?",question:"How did you get to the interview today?",es:"¿Cómo llegó hoy a la entrevista?",model:"Example: “I came by car.” / Ejemplo: «Vine en automóvil». Answer truthfully."},
+{title:"16. Medio de transporte",officer:"What transportation did you use?",officerEs:"¿Qué medio de transporte utilizó?",question:"What transportation did you use?",es:"¿Qué medio de transporte utilizó?",model:"Examples: “I took the bus.” “I took the subway.” “I drove.” / Ejemplos: autobús, metro o automóvil."},
+{title:"17. Elegibilidad y preguntas de seguridad",officer:"Have you ever claimed to be a U.S. citizen?",officerEs:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",question:"Have you ever claimed to be a U.S. citizen?",es:"¿Alguna vez ha afirmado ser ciudadano/a de Estados Unidos?",model:"Answer Yes or No truthfully based on your own history. If yes, be prepared to explain. / Responda según su historial real."},
+{title:"18. Constitución y Juramento de Lealtad",officer:"Do you support the Constitution and the form of government of the United States?",officerEs:"¿Apoya la Constitución y la forma de gobierno de Estados Unidos?",question:"Do you support the Constitution and the form of government of the United States?",es:"¿Apoya la Constitución y la forma de gobierno de Estados Unidos?",model:"Answer according to your sincere beliefs. The officer may also ask whether you understand and are willing to take the Oath of Allegiance. / Responda según sus convicciones."},
+{title:"19. Comprensión del Juramento de Lealtad",officer:"Do you understand the full Oath of Allegiance to the United States?",officerEs:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",question:"Do you understand the full Oath of Allegiance to the United States?",es:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",model:"Answer truthfully. You may ask the officer to explain any words you do not understand. / Responda con sinceridad y pida que le expliquen cualquier palabra que no entienda."},
+{title:"20. Disposición a tomar el juramento",officer:"Are you willing to take the Oath of Allegiance?",officerEs:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",question:"Are you willing to take the Oath of Allegiance?",es:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",model:"Answer according to your sincere beliefs. If you have a religious or conscientious concern, seek qualified legal advice before the interview. / Responda según sus convicciones."},
+{title:"21. Servicio al país si la ley lo exige",officer:"If the law requires it, are you willing to perform service of national importance under civilian direction?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",question:"If the law requires it, are you willing to perform service of national importance under civilian direction?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",model:"Answer truthfully. The N-400 also asks separately about bearing arms and noncombatant service if required by law. / Responda con sinceridad. El formulario también pregunta por separado sobre portar armas y el servicio no combatiente si la ley lo exige."},
+{title:"22. Educación cívica",dynamic:"civics"},
+{title:"23. Prueba de lectura en inglés",dynamic:"reading"},
+{title:"24. Prueba de escritura en inglés",dynamic:"writing"},
+{title:"25. Revisión final y despedida",officer:"Do you have any questions for me?",officerEs:"¿Tiene alguna pregunta para mí?",question:"Do you have any questions for me?",es:"¿Tiene alguna pregunta para mí?",model:"If you do not have questions, you may say: “No, thank you.” / Si no tiene preguntas: «No, gracias»."}
 ];
 let simStage=0,simRecognition=null;
 function getSimulationItem(){
  const st=simulationStages[simStage];
  if(st.dynamic==="civics"){const it=bank()[order[qi]??0];return {officer:"Now I will ask you a civics question.",officerEs:"Ahora le haré una pregunta de educación cívica.",question:it[0],es:it[1],model:"Accepted answer(s): "+it[2]+" / Respuesta(s) aceptada(s): "+it[3]};}
- if(st.dynamic==="reading"){const it=writingItems[wi%writingItems.length];return {officer:"Please read this sentence aloud.",officerEs:"Por favor, lea esta oración en voz alta.",question:it[0],es:it[1],model:"Practice reading the sentence clearly. / Practique leyendo la oración con claridad."};}
+ if(st.dynamic==="reading"){const it=writingItems[wi%writingItems.length];return {officer:"Please read the following sentence aloud.",officerEs:"Por favor, lea la siguiente oración en voz alta.",question:it[2],es:it[4],model:"Practice reading the sentence clearly. / Practique leyendo la pregunta con claridad."};}
  if(st.dynamic==="writing"){const it=writingItems[wi%writingItems.length];return {officer:"Please write this sentence.",officerEs:"Por favor, escriba esta oración.",question:it[3],es:it[5],model:"Correct sentence: "+it[3]+" / Oración correcta: "+it[5]};}
  return st;
+}
+function speakOfficer(text,lang){
+ const avatar=$("officerAvatar"),status=$("officerVoiceStatus");
+ if(avatar)avatar.classList.add("speaking");
+ if(status)status.textContent="La entrevistadora está hablando…";
+ speak(text,lang);
+ const duration=Math.max(1400,Math.min(12000,String(text||"").length*65));
+ window.setTimeout(()=>{if(avatar)avatar.classList.remove("speaking");if(status)status.textContent="Puedes volver a escuchar la pregunta cuando quieras.";},duration);
 }
 function renderSimulation(){
  const st=simulationStages[simStage],it=getSimulationItem();
@@ -687,13 +726,13 @@ function renderSimulation(){
  $("simQuestion").textContent=it.question;$("simQuestionEs").textContent=it.es;$("simAnswer").value="";
  $("simModelAnswer").style.display="none";$("simModelAnswer").textContent="";
  $("simMicStatus").textContent="También puedes escribir tu respuesta abajo.";
- $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===10?"Reiniciar simulacro ↻":"Siguiente →";
+ $("simPrev").disabled=simStage===0;$("simNext").textContent=simStage===simulationStages.length-1?"Reiniciar simulacro ↻":"Siguiente →";
 }
-$("simListen").onclick=()=>speak(getSimulationItem().question,"en-US");
-$("simListenEs").onclick=()=>speak(getSimulationItem().es,"es-US");
+$("simListen").onclick=()=>speakOfficer(getSimulationItem().question,"en-US");
+$("simListenEs").onclick=()=>speakOfficer(getSimulationItem().es,"es-US");
 $("simSample").onclick=()=>{$("simModelAnswer").textContent=getSimulationItem().model;$("simModelAnswer").style.display="block";};
 $("simPrev").onclick=()=>{if(simStage>0){simStage--;renderSimulation();}};
-$("simNext").onclick=()=>{simStage=simStage===10?0:simStage+1;renderSimulation();};
+$("simNext").onclick=()=>{simStage=simStage===simulationStages.length-1?0:simStage+1;renderSimulation();};
 $("simMic").onclick=()=>{
  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
  if(!SR){$("simMicStatus").textContent="El reconocimiento de voz no está disponible en este navegador. Puedes escribir tu respuesta.";return;}
