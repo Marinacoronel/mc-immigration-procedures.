@@ -79,6 +79,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 .auth-panel h2{margin-bottom:8px}.auth-status{min-height:24px;margin-top:10px;font-weight:650}.auth-switch{display:flex;gap:8px;margin:12px 0}.auth-switch button{flex:1}
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <header>
@@ -282,8 +283,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 
 // Registro e inicio de sesión. Requiere configurar Supabase URL y clave pública
 // (anon key) antes de activar este flujo. Nunca se coloca la clave secreta aquí.
-const SUPABASE_URL = ''; // pendiente de configurar
-const SUPABASE_ANON_KEY = ''; // pendiente de configurar
+const SUPABASE_URL = 'PEGA_AQUI_TU_SUPABASE_PROJECT_URL'; // se configura en Supabase
+const SUPABASE_ANON_KEY = 'PEGA_AQUI_TU_SUPABASE_ANON_PUBLIC_KEY'; // clave pública anon
 const authStatus = document.getElementById('authStatus');
 const signupForm = document.getElementById('signupForm');
 const loginForm = document.getElementById('loginForm');
@@ -292,7 +293,9 @@ function authMessage(msg){authStatus.textContent=msg;}
 document.getElementById('showSignup').onclick=()=>{signupForm.classList.remove('hidden');loginForm.classList.add('hidden');logoutButton.classList.add('hidden');authMessage('');};
 document.getElementById('showLogin').onclick=()=>{loginForm.classList.remove('hidden');signupForm.classList.add('hidden');logoutButton.classList.add('hidden');authMessage('');};
 let supabaseClient=null;
-if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);}
+if(SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.startsWith('ey') && window.supabase){
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+}
 function authNotConfigured(){authMessage('El registro todavía no está conectado. Falta configurar Supabase. / Registration is not connected yet.');}
 signupForm.addEventListener('submit',async e=>{e.preventDefault();if(!supabaseClient){authNotConfigured();return;}
  const name=document.getElementById('signupName').value.trim();const email=document.getElementById('signupEmail').value.trim();const password=document.getElementById('signupPassword').value;
