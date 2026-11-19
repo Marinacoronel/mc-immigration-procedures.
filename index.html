@@ -74,12 +74,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 
 .tab{min-height:48px}#simulation .answer{border-left:4px solid var(--gold)}#simPrev:disabled{opacity:.45;cursor:not-allowed}
 
-/* Registro e inicio de sesión */
-.auth-panel{background:#fff;border:2px solid #1769aa;border-radius:16px;padding:18px;margin:0 0 14px;box-shadow:0 3px 15px #153b5d12}
-.auth-panel h2{margin-bottom:8px}.auth-status{min-height:24px;margin-top:10px;font-weight:650}.auth-switch{display:flex;gap:8px;margin:12px 0}.auth-switch button{flex:1}
-
+#accountPanel input{margin-bottom:4px}
+#accountStatus{min-height:20px;margin-top:10px;font-weight:650}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <header>
@@ -91,26 +88,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <div class="notice"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Incluye bancos de práctica bilingües para las versiones 2008 y 2025 y un simulador de repaso del Formulario N-400, edición 01/20/25. Algunas respuestas dependen de cargos actuales o de tu estado; verifícalas con USCIS antes del examen.</div>
 
 
-  <section class="auth-panel" aria-labelledby="authTitle">
-    <h2 id="authTitle">Cuenta de estudiante / Student account</h2>
-    <p class="small">Crea tu cuenta o inicia sesión para continuar. La activación de acceso de pago se conectará después.</p>
-    <div class="auth-switch">
-      <button type="button" class="secondary" id="showSignup">Crear cuenta</button>
-      <button type="button" class="secondary" id="showLogin">Iniciar sesión</button>
+  <section class="panel" id="accountPanel" aria-labelledby="accountTitle">
+    <h2 id="accountTitle">Crear cuenta / Iniciar sesión</h2>
+    <p class="small">Regístrate o entra con tu correo electrónico para usar tu cuenta de MC Immigration Procedures.</p>
+    <label for="accountEmail">Correo electrónico</label>
+    <input id="accountEmail" type="email" autocomplete="email" placeholder="tu correo electrónico">
+    <label for="accountPassword">Contraseña</label>
+    <input id="accountPassword" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres">
+    <div class="actions">
+      <button class="primary" type="button" id="createAccountBtn">Crear cuenta</button>
+      <button class="secondary" type="button" id="loginAccountBtn">Iniciar sesión</button>
     </div>
-    <form id="signupForm">
-      <label for="signupName">Nombre / Name</label><input id="signupName" autocomplete="name" required maxlength="100" placeholder="Tu nombre">
-      <label for="signupEmail">Correo electrónico / Email</label><input id="signupEmail" type="email" autocomplete="email" required>
-      <label for="signupPassword">Contraseña / Password (mínimo 8 caracteres)</label><input id="signupPassword" type="password" autocomplete="new-password" minlength="8" required>
-      <button type="submit" class="primary" style="width:100%;margin-top:14px">Crear cuenta / Sign up</button>
-    </form>
-    <form id="loginForm" class="hidden">
-      <label for="loginEmail">Correo electrónico / Email</label><input id="loginEmail" type="email" autocomplete="email" required>
-      <label for="loginPassword">Contraseña / Password</label><input id="loginPassword" type="password" autocomplete="current-password" required>
-      <button type="submit" class="primary" style="width:100%;margin-top:14px">Iniciar sesión / Sign in</button>
-    </form>
-    <button type="button" class="secondary hidden" id="logoutButton" style="width:100%;margin-top:12px">Cerrar sesión / Sign out</button>
-    <div id="authStatus" class="auth-status" role="status" aria-live="polite"></div>
+    <p class="small" id="accountStatus" role="status" aria-live="polite"></p>
+    <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
   </section>
 
   <section class="payment-panel" aria-labelledby="paymentTitle">
@@ -280,31 +270,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
 </main>
 <script>
-
-// Registro e inicio de sesión. Requiere configurar Supabase URL y clave pública
-// (anon key) antes de activar este flujo. Nunca se coloca la clave secreta aquí.
-const SUPABASE_URL = 'PEGA_AQUI_TU_SUPABASE_PROJECT_URL'; // se configura en Supabase
-const SUPABASE_ANON_KEY = 'PEGA_AQUI_TU_SUPABASE_ANON_PUBLIC_KEY'; // clave pública anon
-const authStatus = document.getElementById('authStatus');
-const signupForm = document.getElementById('signupForm');
-const loginForm = document.getElementById('loginForm');
-const logoutButton = document.getElementById('logoutButton');
-function authMessage(msg){authStatus.textContent=msg;}
-document.getElementById('showSignup').onclick=()=>{signupForm.classList.remove('hidden');loginForm.classList.add('hidden');logoutButton.classList.add('hidden');authMessage('');};
-document.getElementById('showLogin').onclick=()=>{loginForm.classList.remove('hidden');signupForm.classList.add('hidden');logoutButton.classList.add('hidden');authMessage('');};
-let supabaseClient=null;
-if(SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.startsWith('ey') && window.supabase){
-  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-}
-function authNotConfigured(){authMessage('El registro todavía no está conectado. Falta configurar Supabase. / Registration is not connected yet.');}
-signupForm.addEventListener('submit',async e=>{e.preventDefault();if(!supabaseClient){authNotConfigured();return;}
- const name=document.getElementById('signupName').value.trim();const email=document.getElementById('signupEmail').value.trim();const password=document.getElementById('signupPassword').value;
- try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:name}}});if(error)throw error;authMessage(data?.user?.identities?.length===0?'Este correo ya puede estar registrado.':'Cuenta creada. Revisa tu correo para confirmar, si Supabase lo solicita. / Account created; check your email.');}catch(err){authMessage(err.message||'No se pudo crear la cuenta.');}});
-loginForm.addEventListener('submit',async e=>{e.preventDefault();if(!supabaseClient){authNotConfigured();return;}
- const email=document.getElementById('loginEmail').value.trim();const password=document.getElementById('loginPassword').value;
- try{const {error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;authMessage('Sesión iniciada. / Signed in.');signupForm.classList.add('hidden');loginForm.classList.add('hidden');logoutButton.classList.remove('hidden');}catch(err){authMessage(err.message||'No se pudo iniciar sesión.');}});
-logoutButton.addEventListener('click',async()=>{if(!supabaseClient){authNotConfigured();return;}try{const {error}=await supabaseClient.auth.signOut();if(error)throw error;logoutButton.classList.add('hidden');loginForm.classList.remove('hidden');authMessage('Sesión cerrada. / Signed out.');}catch(err){authMessage(err.message||'Error al cerrar sesión.');}});
-
 // Pega aquí el enlace del Portal de clientes de Stripe cuando lo generes
 // desde tu cuenta. Stripe requiere este enlace/portal para que cada cliente
 // pueda administrar o cancelar su propia suscripción de forma segura.
@@ -324,6 +289,100 @@ if (STRIPE_CUSTOMER_PORTAL_URL) {
     alert('El Portal de clientes de Stripe todavía debe activarse y conectarse desde la cuenta de MC Immigration Procedures.');
   });
 }
+
+
+// Supabase Auth: la URL base termina en .supabase.co (sin /rest/v1/).
+// La publishable key es pública; nunca colocar aquí una service_role/secret key.
+const SUPABASE_URL = 'https://metgjkklwoisctydqsgo.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_cl7onAu4rxhFXp0nruv4KQ_fTIwy9qc';
+const accountStatus = document.getElementById('accountStatus');
+const logoutAccountBtn = document.getElementById('logoutAccountBtn');
+
+function showAccountStatus(message, isError=false) {
+  accountStatus.textContent = message;
+  accountStatus.style.color = isError ? '#b42318' : '#18794e';
+}
+function getSavedSession() {
+  try { return JSON.parse(localStorage.getItem('mc_supabase_session') || 'null'); }
+  catch (_) { return null; }
+}
+function saveSession(session) {
+  if (session) localStorage.setItem('mc_supabase_session', JSON.stringify(session));
+}
+async function supabaseAuth(path, payload) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_PUBLISHABLE_KEY
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.msg || data.message || data.error_description || data.error || 'No se pudo completar la solicitud.');
+  return data;
+}
+function refreshAccountDisplay() {
+  const session = getSavedSession();
+  if (session && session.user) {
+    showAccountStatus('Sesión iniciada: ' + (session.user.email || 'cuenta'));
+    logoutAccountBtn.classList.remove('hidden');
+  } else {
+    logoutAccountBtn.classList.add('hidden');
+  }
+}
+document.getElementById('createAccountBtn').addEventListener('click', async () => {
+  const email = document.getElementById('accountEmail').value.trim();
+  const password = document.getElementById('accountPassword').value;
+  if (!email || !password) return showAccountStatus('Escribe tu correo y contraseña.', true);
+  if (password.length < 6) return showAccountStatus('La contraseña debe tener al menos 6 caracteres.', true);
+  showAccountStatus('Creando tu cuenta…');
+  try {
+    const data = await supabaseAuth('signup', { email, password });
+    if (data.session) {
+      saveSession(data.session);
+      showAccountStatus('¡Cuenta creada y sesión iniciada!');
+      refreshAccountDisplay();
+    } else {
+      showAccountStatus('Cuenta creada. Revisa tu correo y confirma la dirección antes de iniciar sesión.');
+    }
+  } catch (error) {
+    showAccountStatus(error.message, true);
+  }
+});
+document.getElementById('loginAccountBtn').addEventListener('click', async () => {
+  const email = document.getElementById('accountEmail').value.trim();
+  const password = document.getElementById('accountPassword').value;
+  if (!email || !password) return showAccountStatus('Escribe tu correo y contraseña.', true);
+  showAccountStatus('Iniciando sesión…');
+  try {
+    const data = await supabaseAuth('token?grant_type=password', { email, password });
+    saveSession(data);
+    showAccountStatus('¡Sesión iniciada correctamente!');
+    refreshAccountDisplay();
+  } catch (error) {
+    showAccountStatus(error.message, true);
+  }
+});
+logoutAccountBtn.addEventListener('click', async () => {
+  const session = getSavedSession();
+  try {
+    if (session && session.access_token) {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+    }
+  } catch (_) {}
+  localStorage.removeItem('mc_supabase_session');
+  showAccountStatus('Has cerrado sesión.');
+  refreshAccountDisplay();
+});
+refreshAccountDisplay();
+
 
 const banks={
 2025:[
