@@ -294,6 +294,8 @@ if (STRIPE_CUSTOMER_PORTAL_URL) {
 // Supabase Auth: la URL base termina en .supabase.co (sin /rest/v1/).
 // La publishable key es pública; nunca colocar aquí una service_role/secret key.
 const SUPABASE_URL = 'https://metgjkklwoisctydqsgo.supabase.co';
+// URL de regreso exacta indicada por la propietaria (incluye el punto antes de la última /).
+const APP_REDIRECT_URL = 'https://marinacoronel.github.io/mc-immigration-procedures./';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_cl7onAu4rxhFXp0nruv4KQ_fTIwy9qc';
 const accountStatus = document.getElementById('accountStatus');
 const logoutAccountBtn = document.getElementById('logoutAccountBtn');
@@ -310,7 +312,11 @@ function saveSession(session) {
   if (session) localStorage.setItem('mc_supabase_session', JSON.stringify(session));
 }
 async function supabaseAuth(path, payload) {
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+  // Supabase debe enviar el enlace de confirmación de registro a la URL de la aplicación.
+  const redirectQuery = path === 'signup'
+    ? `?redirect_to=${encodeURIComponent(APP_REDIRECT_URL)}`
+    : '';
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/${path}${redirectQuery}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
