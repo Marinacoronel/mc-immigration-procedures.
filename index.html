@@ -333,6 +333,8 @@ async function supabaseAuth(path, payload) {
   if (!response.ok) throw new Error(data.msg || data.message || data.error_description || data.error || 'No se pudo completar la solicitud.');
   return data;
 }
+const ADMIN_EMAIL = 'sukiss1990@icloud.com';
+function isAdminEmail(email){ return String(email||'').trim().toLowerCase() === ADMIN_EMAIL; }
 function showAccessStage(stage) {
   const account=document.getElementById('accountPanel');
   const payment=document.getElementById('paymentPanel');
@@ -347,6 +349,7 @@ function currentStage(){
  // Entrada: registro. Tras Stripe, si hay sesión y retorno de éxito, app.
  const paymentSuccess = new URLSearchParams(window.location.search).get('payment') === 'success';
  const session = getSavedSession();
+ if(session && session.user && isAdminEmail(session.user.email)){ return 'app'; }
  if(paymentSuccess && session && session.user){ return 'app'; }
  return 'register';
 }
@@ -371,7 +374,7 @@ document.getElementById('createAccountBtn').addEventListener('click', async () =
       saveSession(data.session);
       showAccountStatus('¡Cuenta creada y sesión iniciada!');
       refreshAccountDisplay();
-      showAccessStage('payment');
+      showAccessStage(isAdminEmail(email) ? 'app' : 'payment');
     } else {
       showAccountStatus('Cuenta creada. Revisa tu correo y confirma la dirección antes de iniciar sesión.');
     }
@@ -389,7 +392,7 @@ document.getElementById('loginAccountBtn').addEventListener('click', async () =>
     saveSession(data);
     showAccountStatus('¡Sesión iniciada correctamente!');
     refreshAccountDisplay();
-    showAccessStage('payment');
+    showAccessStage(isAdminEmail(email) ? 'app' : 'payment');
   } catch (error) {
     showAccountStatus(error.message, true);
   }
