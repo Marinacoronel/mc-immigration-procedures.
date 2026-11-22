@@ -77,7 +77,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 #accountPanel input{margin-bottom:4px}
 #accountStatus{min-height:20px;margin-top:10px;font-weight:650}
 
-#accountPanel{margin-bottom:14px}#paymentPanel.hidden{display:none!important}#appShell.hidden{display:none!important}main>.notice{display:none}
+/* Flujo por pantallas: registro, pago y app */
+.stage-hidden{display:none!important}
 </style>
 </head>
 <body>
@@ -87,7 +88,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
   <p>Preparación para la ciudadanía estadounidense · Español e inglés</p>
 </header>
 <main>
-  <div class="notice"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Incluye bancos de práctica bilingües para las versiones 2008 y 2025 y un simulador de repaso del Formulario N-400, edición 01/20/25. Algunas respuestas dependen de cargos actuales o de tu estado; verifícalas con USCIS antes del examen.</div>
+  <div class="notice stage-hidden" id="noticePanel"><strong>Importante:</strong> Esta es una herramienta de práctica educativa, no asesoría legal ni una garantía de aprobación. Confirma qué versión del examen te corresponde en USCIS. Incluye bancos de práctica bilingües para las versiones 2008 y 2025 y un simulador de repaso del Formulario N-400, edición 01/20/25. Algunas respuestas dependen de cargos actuales o de tu estado; verifícalas con USCIS antes del examen.</div>
 
 
   <section class="panel" id="accountPanel" aria-labelledby="accountTitle">
@@ -105,7 +106,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
   </section>
 
-  <section class="payment-panel hidden" id="paymentPanel" aria-labelledby="paymentTitle">
+  <section class="payment-panel stage-hidden" id="paymentPanel" aria-labelledby="paymentTitle">
     <h2 id="paymentTitle">Acceso a MC Immigration Procedures</h2>
     <p>Desbloquea tu preparación para la ciudadanía con prácticas en inglés y español.</p>
     <div class="payment-price">$24.99 USD · cada 3 meses</div>
@@ -121,7 +122,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <p>Your support and trust mean a lot to us. We wish you great success as you prepare for U.S. citizenship!</p>
     </div>
   </section>
-  <div id="appShell" class="hidden">
+  <div id="appShell" class="stage-hidden">
   <div class="tabs">
     <button class="tab active" data-view="civics">Cívica</button>
     <button class="tab" data-view="interview">N400</button>
@@ -270,7 +271,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <p class="small">Cada palabra incluye su significado en inglés y su traducción o explicación en español.</p>
     <div id="definitionsList"></div>
   </section>
-  </div><!-- appShell -->
+  </div>
   <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
 </main>
 <script>
@@ -333,18 +334,25 @@ async function supabaseAuth(path, payload) {
   return data;
 }
 function showAccessStage(stage) {
-  document.getElementById('accountPanel').classList.toggle('hidden', stage !== 'account');
-  document.getElementById('paymentPanel').classList.toggle('hidden', stage !== 'payment');
-  document.getElementById('appShell').classList.toggle('hidden', stage !== 'app');
-  localStorage.setItem('mc_access_stage', stage);
+  const account=document.getElementById('accountPanel');
+  const payment=document.getElementById('paymentPanel');
+  const app=document.getElementById('appShell');
+  const notice=document.getElementById('noticePanel');
+  account.classList.toggle('stage-hidden',stage!=='register');
+  payment.classList.toggle('stage-hidden',stage!=='payment');
+  app.classList.toggle('stage-hidden',stage!=='app');
+  if(notice) notice.classList.add('stage-hidden');
 }
-function hasSession(){const ss=getSavedSession();return !!(ss&&ss.user);}
+function currentStage(){
+ const session=getSavedSession();
+ if(!session||!session.user)return 'register';
+ return localStorage.getItem('mc_paid_access')==='yes'?'app':'payment';
+}
 function refreshAccountDisplay() {
   const session = getSavedSession();
   if (session && session.user) {
     showAccountStatus('Sesión iniciada: ' + (session.user.email || 'cuenta'));
     logoutAccountBtn.classList.remove('hidden');
-    showAccessStage(localStorage.getItem('mc_paid_access') === 'yes' ? 'app' : 'payment');
   } else {
     logoutAccountBtn.classList.add('hidden');
   }
@@ -361,6 +369,7 @@ document.getElementById('createAccountBtn').addEventListener('click', async () =
       saveSession(data.session);
       showAccountStatus('¡Cuenta creada y sesión iniciada!');
       refreshAccountDisplay();
+      showAccessStage('payment');
     } else {
       showAccountStatus('Cuenta creada. Revisa tu correo y confirma la dirección antes de iniciar sesión.');
     }
@@ -378,6 +387,7 @@ document.getElementById('loginAccountBtn').addEventListener('click', async () =>
     saveSession(data);
     showAccountStatus('¡Sesión iniciada correctamente!');
     refreshAccountDisplay();
+    showAccessStage('payment');
   } catch (error) {
     showAccountStatus(error.message, true);
   }
@@ -400,8 +410,6 @@ logoutAccountBtn.addEventListener('click', async () => {
   refreshAccountDisplay();
 });
 refreshAccountDisplay();
-if (!hasSession()) showAccessStage('account');
-else showAccessStage(localStorage.getItem('mc_paid_access') === 'yes' ? 'app' : 'payment');
 
 
 const banks={
@@ -1018,16 +1026,18 @@ $("simMic").onclick=()=>{
 
 // Mostrar el agradecimiento únicamente cuando Stripe redirija a la aplicación
 // con ?payment=success después de completar el pago.
-if (new URLSearchParams(window.location.search).get('payment') === 'success' && hasSession()) {
-  localStorage.setItem('mc_paid_access','yes');
-  showAccessStage('app');
-  const thanks = document.getElementById('paymentThanks');
-  if (thanks) {
-    thanks.style.display = 'block';
-    thanks.scrollIntoView({ behavior: 'smooth', block: 'center' });
+if (new URLSearchParams(window.location.search).get('payment') === 'success') {
+  if(getSavedSession() && getSavedSession().user){
+    localStorage.setItem('mc_paid_access','yes');
+    showAccessStage('app');
+    const thanks=document.getElementById('paymentThanks');
+    if(thanks) thanks.style.display='block';
   }
 }
+showAccessStage(currentStage());
 
+
+showAccessStage(currentStage());
 initOrder();renderInterview();renderPhrase();renderWriting();renderStudyPractice();renderSimulation();
 </script>
 </body>
