@@ -76,6 +76,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 
 #accountPanel input{margin-bottom:4px}
 #accountStatus{min-height:20px;margin-top:10px;font-weight:650}
+
+#accountPanel{margin-bottom:14px}#paymentPanel.hidden{display:none!important}#appShell.hidden{display:none!important}
 </style>
 </head>
 <body>
@@ -103,7 +105,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
   </section>
 
-  <section class="payment-panel" aria-labelledby="paymentTitle">
+  <section class="payment-panel hidden" id="paymentPanel" aria-labelledby="paymentTitle">
     <h2 id="paymentTitle">Acceso a MC Immigration Procedures</h2>
     <p>Desbloquea tu preparación para la ciudadanía con prácticas en inglés y español.</p>
     <div class="payment-price">$24.99 USD · cada 3 meses</div>
@@ -119,6 +121,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <p>Your support and trust mean a lot to us. We wish you great success as you prepare for U.S. citizenship!</p>
     </div>
   </section>
+  <div id="appShell" class="hidden">
   <div class="tabs">
     <button class="tab active" data-view="civics">Cívica</button>
     <button class="tab" data-view="interview">N400</button>
@@ -267,6 +270,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <p class="small">Cada palabra incluye su significado en inglés y su traducción o explicación en español.</p>
     <div id="definitionsList"></div>
   </section>
+  </div><!-- appShell -->
   <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
 </main>
 <script>
@@ -328,11 +332,18 @@ async function supabaseAuth(path, payload) {
   if (!response.ok) throw new Error(data.msg || data.message || data.error_description || data.error || 'No se pudo completar la solicitud.');
   return data;
 }
+function showAccessStage(stage) {
+  document.getElementById('accountPanel').classList.toggle('hidden', stage !== 'account');
+  document.getElementById('paymentPanel').classList.toggle('hidden', stage !== 'payment');
+  document.getElementById('appShell').classList.toggle('hidden', stage !== 'app');
+  localStorage.setItem('mc_access_stage', stage);
+}
+function hasSession(){const ss=getSavedSession();return !!(ss&&ss.user);}
 function refreshAccountDisplay() {
   const session = getSavedSession();
   if (session && session.user) {
     showAccountStatus('Sesión iniciada: ' + (session.user.email || 'cuenta'));
-    logoutAccountBtn.classList.remove('hidden');
+    logoutAccountBtn.classList.remove('hidden');\n    showAccessStage('payment');
   } else {
     logoutAccountBtn.classList.add('hidden');
   }
@@ -1004,7 +1015,7 @@ $("simMic").onclick=()=>{
 
 // Mostrar el agradecimiento únicamente cuando Stripe redirija a la aplicación
 // con ?payment=success después de completar el pago.
-if (new URLSearchParams(window.location.search).get('payment') === 'success') {
+if (new URLSearchParams(window.location.search).get('payment') === 'success' && hasSession()) {\n  localStorage.setItem('mc_paid_access','yes');\n  showAccessStage('app');
   const thanks = document.getElementById('paymentThanks');
   if (thanks) {
     thanks.style.display = 'block';
