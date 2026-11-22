@@ -344,8 +344,10 @@ function showAccessStage(stage) {
   if(notice) notice.classList.add('stage-hidden');
 }
 function currentStage(){
- // Siempre mostrar primero registro/inicio de sesión al abrir la página.
- // La pantalla de pago solo se activa después de iniciar sesión explícitamente.
+ // Entrada: registro. Tras Stripe, si hay sesión y retorno de éxito, app.
+ const paymentSuccess = new URLSearchParams(window.location.search).get('payment') === 'success';
+ const session = getSavedSession();
+ if(paymentSuccess && session && session.user){ return 'app'; }
  return 'register';
 }
 function refreshAccountDisplay() {
@@ -1035,9 +1037,6 @@ if (new URLSearchParams(window.location.search).get('payment') === 'success') {
     if(thanks) thanks.style.display='block';
   }
 }
-showAccessStage(currentStage());
-
-
 showAccessStage(currentStage());
 initOrder();renderInterview();renderPhrase();renderWriting();renderStudyPractice();renderSimulation();
 </script>
