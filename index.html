@@ -344,9 +344,9 @@ function showAccessStage(stage) {
   if(notice) notice.classList.add('stage-hidden');
 }
 function currentStage(){
- const session=getSavedSession();
- if(!session||!session.user)return 'register';
- return localStorage.getItem('mc_paid_access')==='yes'?'app':'payment';
+ // Siempre mostrar primero registro/inicio de sesión al abrir la página.
+ // La pantalla de pago solo se activa después de iniciar sesión explícitamente.
+ return 'register';
 }
 function refreshAccountDisplay() {
   const session = getSavedSession();
@@ -408,6 +408,7 @@ logoutAccountBtn.addEventListener('click', async () => {
   localStorage.removeItem('mc_supabase_session');
   showAccountStatus('Has cerrado sesión.');
   refreshAccountDisplay();
+  showAccessStage('register');
 });
 refreshAccountDisplay();
 
