@@ -77,7 +77,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
 #accountPanel input{margin-bottom:4px}
 #accountStatus{min-height:20px;margin-top:10px;font-weight:650}
 
-#accountPanel{margin-bottom:14px}#paymentPanel.hidden{display:none!important}#appShell.hidden{display:none!important}
+#accountPanel{margin-bottom:14px}#paymentPanel.hidden{display:none!important}#appShell.hidden{display:none!important}main>.notice{display:none}
 </style>
 </head>
 <body>
@@ -343,7 +343,8 @@ function refreshAccountDisplay() {
   const session = getSavedSession();
   if (session && session.user) {
     showAccountStatus('Sesión iniciada: ' + (session.user.email || 'cuenta'));
-    logoutAccountBtn.classList.remove('hidden');\n    showAccessStage('payment');
+    logoutAccountBtn.classList.remove('hidden');
+    showAccessStage(localStorage.getItem('mc_paid_access') === 'yes' ? 'app' : 'payment');
   } else {
     logoutAccountBtn.classList.add('hidden');
   }
@@ -399,6 +400,8 @@ logoutAccountBtn.addEventListener('click', async () => {
   refreshAccountDisplay();
 });
 refreshAccountDisplay();
+if (!hasSession()) showAccessStage('account');
+else showAccessStage(localStorage.getItem('mc_paid_access') === 'yes' ? 'app' : 'payment');
 
 
 const banks={
@@ -1015,7 +1018,9 @@ $("simMic").onclick=()=>{
 
 // Mostrar el agradecimiento únicamente cuando Stripe redirija a la aplicación
 // con ?payment=success después de completar el pago.
-if (new URLSearchParams(window.location.search).get('payment') === 'success' && hasSession()) {\n  localStorage.setItem('mc_paid_access','yes');\n  showAccessStage('app');
+if (new URLSearchParams(window.location.search).get('payment') === 'success' && hasSession()) {
+  localStorage.setItem('mc_paid_access','yes');
+  showAccessStage('app');
   const thanks = document.getElementById('paymentThanks');
   if (thanks) {
     thanks.style.display = 'block';
