@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#123b5d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MC Immigration">
+<meta name="mobile-web-app-capable" content="yes">
 <title>MC Immigration Procedures | Práctica de Ciudadanía</title>
 <style>
 :root{--navy:#123b5d;--blue:#1769aa;--gold:#e8b44d;--bg:#f4f7fb;--ink:#172536;--muted:#5d6b7a;--white:#fff;--green:#18794e;--red:#b42318}
@@ -103,6 +108,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <button class="secondary" type="button" id="loginAccountBtn">Iniciar sesión</button>
     </div>
     <p class="small" id="accountStatus" role="status" aria-live="polite"></p>
+    <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
   </section>
 
   <section class="payment-panel stage-hidden" id="paymentPanel" aria-labelledby="paymentTitle">
@@ -270,9 +276,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <p class="small">Cada palabra incluye su significado en inglés y su traducción o explicación en español.</p>
     <div id="definitionsList"></div>
   </section>
-  <div class="actions" style="justify-content:center; margin: 24px 0 12px;">
-    <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
-  </div>
   </div>
   <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
 </main>
@@ -301,8 +304,8 @@ if (STRIPE_CUSTOMER_PORTAL_URL) {
 // Supabase Auth: la URL base termina en .supabase.co (sin /rest/v1/).
 // La publishable key es pública; nunca colocar aquí una service_role/secret key.
 const SUPABASE_URL = 'https://metgjkklwoisctydqsgo.supabase.co';
-// URL de regreso exacta indicada por la propietaria (incluye el punto antes de la última /).
-const APP_REDIRECT_URL = 'https://marinacoronel.github.io/mc-immigration-procedures./';
+// URL de regreso de GitHub Pages (sin punto adicional en el nombre del repositorio).
+const APP_REDIRECT_URL = 'https://marinacoronel.github.io/mc-immigration-procedures/';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_cl7onAu4rxhFXp0nruv4KQ_fTIwy9qc';
 const accountStatus = document.getElementById('accountStatus');
 const logoutAccountBtn = document.getElementById('logoutAccountBtn');
