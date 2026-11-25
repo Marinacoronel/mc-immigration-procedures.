@@ -761,9 +761,11 @@ function speak(t,lang='en-US'){
   const textToRead=String(t||'').trim();
   if(!textToRead){alert('No hay texto para escuchar.');return;}
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible aquí. Abre la página en Safari y revisa el volumen del iPhone.');return;}
-  const token=++mcSpeechToken;
+  ++mcSpeechToken;
   try{
-    synth.cancel();
+    // En Safari de iPhone, cancelar cuando no hay audio activo puede impedir
+    // que la nueva lectura comience. Solo cancelamos si realmente hay audio pendiente.
+    if(synth.speaking || synth.pending) synth.cancel();
     const utterance=new SpeechSynthesisUtterance(textToRead);
     utterance.lang=lang;
     utterance.rate=0.82;
@@ -785,7 +787,7 @@ function speakSequence(items){
   const token=++mcSpeechToken;
   let index=0;
   try{
-    synth.cancel();
+    if(synth.speaking || synth.pending) synth.cancel();
     const playNext=()=>{
       if(token!==mcSpeechToken || index>=queue.length)return;
       const part=queue[index++];
