@@ -761,7 +761,8 @@ function speak(t,lang='en-US'){
   if(!textToRead){alert('No hay texto para escuchar.');return;}
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible aquí. Abre la página en Safari y revisa el volumen del iPhone.');return;}
   synth.cancel();
-  // Short delay after cancel helps Safari/iOS reliably start the next utterance.
+  // Inicia la voz directamente desde el toque del usuario para mejorar
+  // la compatibilidad con Safari en iPhone.
   const u=new SpeechSynthesisUtterance(textToRead);
   u.lang=lang;
   u.rate=0.82;
@@ -778,7 +779,7 @@ function speak(t,lang='en-US'){
   };
   setVoice();
   u.onerror=()=>{console.warn('La voz no pudo reproducirse. Comprueba el volumen y vuelve a tocar el botón.');};
-  window.setTimeout(()=>{setVoice();synth.speak(u);},100);
+  synth.speak(u);
 }
 function speakSequence(items){
   const synth=window.speechSynthesis;
@@ -804,7 +805,9 @@ function speakSequence(items){
     u.onerror=playNext;
     synth.speak(u);
   };
-  window.setTimeout(playNext,100);
+  // La primera frase comienza dentro del toque; las siguientes continúan
+  // automáticamente al terminar cada frase.
+  playNext();
 }
 $('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak('Question. '+writingItems[wi][2],'en-US');
 $('writeDictation').onclick=()=>speak('Please write the following sentence. '+writingItems[wi][3],'en-US');
@@ -942,6 +945,12 @@ const simulationStages=[
 {title:"19. Comprensión del Juramento de Lealtad",officer:"Do you understand the full Oath of Allegiance to the United States?",officerEs:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",question:"Do you understand the full Oath of Allegiance to the United States?",es:"¿Entiende completamente el Juramento de Lealtad a Estados Unidos?",model:"Answer truthfully. You may ask the officer to explain any words you do not understand. / Responda con sinceridad y pida que le expliquen cualquier palabra que no entienda."},
 {title:"20. Disposición a tomar el juramento",officer:"Are you willing to take the Oath of Allegiance?",officerEs:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",question:"Are you willing to take the Oath of Allegiance?",es:"¿Está dispuesto/a a tomar el Juramento de Lealtad?",model:"Answer according to your sincere beliefs. If you have a religious or conscientious concern, seek qualified legal advice before the interview. / Responda según sus convicciones."},
 {title:"21. Servicio al país si la ley lo exige",officer:"If the law requires it, are you willing to perform service of national importance under civilian direction?",officerEs:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",question:"If the law requires it, are you willing to perform service of national importance under civilian direction?",es:"Si la ley lo exige, ¿está dispuesto/a a realizar un servicio de importancia nacional bajo dirección civil?",model:"Answer truthfully. The N-400 also asks separately about bearing arms and noncombatant service if required by law. / Responda con sinceridad. El formulario también pregunta por separado sobre portar armas y el servicio no combatiente si la ley lo exige."},
+{title:"22. Color de ojos",officer:"What color are your eyes?",officerEs:"¿De qué color son sus ojos?",question:"What color are your eyes?",es:"¿De qué color son sus ojos?",model:"Personal answer. Example: “My eyes are brown.” / Respuesta personal. Ejemplo: «Mis ojos son cafés»."},
+{title:"23. Color de cabello",officer:"What color is your hair?",officerEs:"¿De qué color es su cabello?",question:"What color is your hair?",es:"¿De qué color es su cabello?",model:"Personal answer. Example: “My hair is black.” / Respuesta personal. Ejemplo: «Mi cabello es negro»."},
+{title:"24. Estatura",officer:"How tall are you?",officerEs:"¿Cuánto mide?",question:"How tall are you?",es:"¿Cuánto mide?",model:"Personal answer. Example: “I am five feet six inches tall.” / Respuesta personal. Diga su estatura real."},
+{title:"25. Viajes fuera de Estados Unidos",officer:"Have you traveled outside the United States in the last five years?",officerEs:"¿Ha viajado fuera de Estados Unidos durante los últimos cinco años?",question:"Have you traveled outside the United States in the last five years?",es:"¿Ha viajado fuera de Estados Unidos durante los últimos cinco años?",model:"Answer Yes or No truthfully. Be ready to give the dates, countries, and length of each trip, consistent with your N-400. / Responda Sí o No con sinceridad. Prepárese para indicar fechas, países y duración de cada viaje, de acuerdo con su N-400."},
+{title:"26. Motivo para solicitar la ciudadanía",officer:"Why do you want to become a U.S. citizen?",officerEs:"¿Por qué quiere convertirse en ciudadano/a de Estados Unidos?",question:"Why do you want to become a U.S. citizen?",es:"¿Por qué quiere convertirse en ciudadano/a de Estados Unidos?",model:"Personal answer. Example: “I want to become a U.S. citizen because I want to fully participate in my community and have the rights and responsibilities of citizenship.” / Respuesta personal. Explique su motivo verdadero con sus propias palabras."},
+{title:"27. Quién patrocinó su residencia",officer:"Who sponsored you for your permanent residence?",officerEs:"¿Quién lo/la patrocinó para obtener la residencia permanente?",question:"Who sponsored you for your permanent residence?",es:"¿Quién lo/la patrocinó para obtener la residencia permanente?",model:"Personal answer. Example: “My husband sponsored me.” / Respuesta personal. Diga quién presentó o patrocinó su petición, si corresponde. La respuesta debe coincidir con su historial migratorio."},
 // 20 preguntas seleccionadas del banco de práctica 2025 (128 preguntas).
 ...banks["2025"].slice(0,20).map((item,i)=>({
  title:`Civics · Question ${i+1} of 20`,
