@@ -756,27 +756,34 @@ $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}el
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
 let mcSpeechToken = 0;
+// Mantener referencias vivas: Safari en iPhone puede detener la voz
+// si el objeto SpeechSynthesisUtterance queda sin referencia.
+let mcSpeechUtterance = null;
+let mcSpeechQueue = [];
 function speak(t,lang='en-US'){
   const synth=window.speechSynthesis;
   const textToRead=String(t||'').trim();
   if(!textToRead){alert('No hay texto para escuchar.');return;}
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible aquí. Abre la página en Safari y revisa el volumen del iPhone.');return;}
   ++mcSpeechToken;
+  mcSpeechQueue=[];
   try{
-    // En Safari de iPhone, cancelar cuando no hay audio activo puede impedir
-    // que la nueva lectura comience. Solo cancelamos si realmente hay audio pendiente.
     if(synth.speaking || synth.pending) synth.cancel();
-    const utterance=new SpeechSynthesisUtterance(textToRead);
+    const utterance=new window.SpeechSynthesisUtterance(textToRead);
+    mcSpeechUtterance=utterance;
     utterance.lang=lang;
-    utterance.rate=0.82;
+    utterance.rate=0.85;
     utterance.pitch=1;
     utterance.volume=1;
-    utterance.onerror=(event)=>console.warn('No se pudo reproducir la voz:',event.error||'error de síntesis');
+    utterance.onerror=(event)=>{
+      console.error('Error de voz de Safari:',event.error||event);
+      if(event.error && event.error!=='canceled' && event.error!=='interrupted')
+        alert('Safari no pudo reproducir la voz ('+event.error+'). Cierra y vuelve a abrir la aplicación.');
+    };
     synth.speak(utterance);
-    synth.resume();
   }catch(error){
     console.error('Error al iniciar la lectura:',error);
-    alert('No se pudo iniciar el audio. Intenta tocar Escuchar otra vez.');
+    alert('No se pudo iniciar el audio: '+(error.message||error));
   }
 }
 function speakSequence(items){
@@ -785,26 +792,30 @@ function speakSequence(items){
   const queue=items.filter(item=>item && String(item.text||'').trim());
   if(!queue.length){alert('No hay texto para escuchar.');return;}
   const token=++mcSpeechToken;
-  let index=0;
+  mcSpeechQueue=queue.slice();
   try{
     if(synth.speaking || synth.pending) synth.cancel();
     const playNext=()=>{
-      if(token!==mcSpeechToken || index>=queue.length)return;
-      const part=queue[index++];
-      const utterance=new SpeechSynthesisUtterance(String(part.text));
+      if(token!==mcSpeechToken || !mcSpeechQueue.length)return;
+      const part=mcSpeechQueue.shift();
+      const utterance=new window.SpeechSynthesisUtterance(String(part.text));
+      mcSpeechUtterance=utterance;
       utterance.lang=part.lang||'en-US';
-      utterance.rate=0.82;
+      utterance.rate=0.85;
       utterance.pitch=1;
       utterance.volume=1;
       utterance.onend=playNext;
-      utterance.onerror=playNext;
+      utterance.onerror=(event)=>{
+        console.error('Error de voz de Safari:',event.error||event);
+        if(event.error==='canceled' || event.error==='interrupted')return;
+        playNext();
+      };
       synth.speak(utterance);
-      synth.resume();
     };
     playNext();
   }catch(error){
     console.error('Error al iniciar la secuencia de audio:',error);
-    alert('No se pudo iniciar el audio. Intenta tocar Escuchar otra vez.');
+    alert('No se pudo iniciar el audio: '+(error.message||error));
   }
 }
 $('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak('Question. '+writingItems[wi][2],'en-US');
