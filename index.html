@@ -755,19 +755,24 @@ $('twelveMic').onclick=()=>{$('twelveStatus').textContent='🎙️ Escuchando…
 $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}else{$('twelveStatus').innerHTML=twelveCorrect>=9?`<span class="correct">✓ Resultado: ${twelveCorrect}/12. ¡Buen trabajo!</span>`:`Resultado: ${twelveCorrect}/12. Sigue practicando.`;$('twelveAnswer').textContent='Simulacro terminado. Pulsa “Comenzar simulacro de 12” para repetir.';$('twelveScore').textContent=`Resultado final: ${twelveCorrect} de 12`;}};
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
+let mcSpeechToken = 0;
 function speak(t,lang='en-US'){
   const synth=window.speechSynthesis;
   const textToRead=String(t||'').trim();
   if(!textToRead){alert('No hay texto para escuchar.');return;}
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible aquí. Abre la página en Safari y revisa el volumen del iPhone.');return;}
-  synth.cancel();
-  // Inicia la voz directamente desde el toque del usuario para mejorar
-  // la compatibilidad con Safari en iPhone.
-  const u=new SpeechSynthesisUtterance(textToRead);
-  u.lang=lang;
-  u.rate=0.82;
-  u.pitch=1;
-  const setVoice=()=>{
+  const token=++mcSpeechToken;
+  // No cancelar cuando el motor está inactivo: Safari en iPhone puede
+  // ignorar la siguiente frase si recibe cancel() antes de cada reproducción.
+  const wasBusy=synth.speaking || synth.pending;
+  if(wasBusy) synth.cancel();
+  const play=()=>{
+    if(token!==mcSpeechToken)return;
+    const u=new SpeechSynthesisUtterance(textToRead);
+    u.lang=lang;
+    u.rate=0.82;
+    u.pitch=1;
+    u.volume=1;
     const voices=synth.getVoices()||[];
     const prefix=lang.toLowerCase().startsWith('es')?'es':'en';
     const compatible=voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith(prefix));
@@ -775,25 +780,29 @@ function speak(t,lang='en-US'){
     const preferred=compatible.find(v=>femaleHint.test(v.name||''));
     const exact=compatible.find(v=>v.lang && v.lang.toLowerCase()===lang.toLowerCase());
     const match=preferred||exact||compatible[0];
-    if(match) u.voice=match;
+    if(match)u.voice=match;
+    u.onerror=(event)=>console.warn('No se pudo reproducir la voz:',event.error||'error de síntesis');
+    synth.speak(u);
+    // Safari/iOS puede dejar la síntesis pausada aunque se haya solicitado speak().
+    synth.resume();
   };
-  setVoice();
-  u.onerror=()=>{console.warn('La voz no pudo reproducirse. Comprueba el volumen y vuelve a tocar el botón.');};
-  synth.speak(u);
+  if(wasBusy) window.setTimeout(play,120); else play();
 }
 function speakSequence(items){
   const synth=window.speechSynthesis;
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible aquí. Abre la página en Safari y revisa el volumen del iPhone.');return;}
   const queue=items.filter(x=>x && String(x.text||'').trim());
   if(!queue.length)return;
-  synth.cancel();
+  const token=++mcSpeechToken;
+  const wasBusy=synth.speaking || synth.pending;
+  if(wasBusy)synth.cancel();
   let index=0;
   const femaleHint=/female|samantha|ava|allison|susan|zira|jenny|aria|serena|monica|paulina|lucia|helena|sofia/i;
   const playNext=()=>{
-    if(index>=queue.length)return;
+    if(token!==mcSpeechToken || index>=queue.length)return;
     const part=queue[index++];
     const u=new SpeechSynthesisUtterance(String(part.text));
-    u.lang=part.lang||'en-US';u.rate=0.82;u.pitch=1;
+    u.lang=part.lang||'en-US';u.rate=0.82;u.pitch=1;u.volume=1;
     const voices=synth.getVoices()||[];
     const prefix=u.lang.toLowerCase().startsWith('es')?'es':'en';
     const compatible=voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith(prefix));
@@ -804,10 +813,10 @@ function speakSequence(items){
     u.onend=playNext;
     u.onerror=playNext;
     synth.speak(u);
+    synth.resume();
   };
-  // La primera frase comienza dentro del toque; las siguientes continúan
-  // automáticamente al terminar cada frase.
-  playNext();
+  const begin=()=>{if(token===mcSpeechToken)playNext();};
+  if(wasBusy)window.setTimeout(begin,120);else begin();
 }
 $('listen').onclick=()=>speak(bank()[order[qi]][0]);$('ilisten').onclick=()=>speak(interviews[ii][0]);$('phraseListen').onclick=()=>speakSequence([{text:$('phrase').textContent,lang:'en-US'},{text:$('phraseEs').textContent,lang:'es-US'}]);$('writeListen').onclick=()=>speak('Question. '+writingItems[wi][2],'en-US');
 $('writeDictation').onclick=()=>speak('Please write the following sentence. '+writingItems[wi][3],'en-US');
