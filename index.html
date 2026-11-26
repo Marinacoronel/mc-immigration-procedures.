@@ -755,104 +755,94 @@ $('twelveMic').onclick=()=>{$('twelveStatus').textContent='🎙️ Escuchando…
 $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}else{$('twelveStatus').innerHTML=twelveCorrect>=9?`<span class="correct">✓ Resultado: ${twelveCorrect}/12. ¡Buen trabajo!</span>`:`Resultado: ${twelveCorrect}/12. Sigue practicando.`;$('twelveAnswer').textContent='Simulacro terminado. Pulsa “Comenzar simulacro de 12” para repetir.';$('twelveScore').textContent=`Resultado final: ${twelveCorrect} de 12`;}};
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
-// Motor de lectura: Web Speech API. Se mantiene toda la lógica de contenido
-// y se inicia la voz directamente desde el toque del botón (requisito de iOS).
+// Motor central de lectura en voz alta (Safari/iPhone y otros navegadores).
+// Todas las secciones conservan sus botones y contenido; solo comparten este motor.
 let mcSpeechUtterance = null;
-let mcSpeechUtterances = [];
+let mcSpeechSequenceToken = 0;
 
-function mcClearSpeech(synth){
+function mcStopSpeech(){
+  mcSpeechSequenceToken++;
   try{
-    if(synth && (synth.speaking || synth.pending || synth.paused)){
-      synth.cancel();
-    }
-  }catch(error){
-    console.warn('No se pudo limpiar la cola de audio:',error);
-  }
-  mcSpeechUtterance = null;
-  mcSpeechUtterances = [];
+    const synth=window.speechSynthesis;
+    if(synth){synth.cancel();}
+  }catch(error){console.warn('No se pudo detener la voz:',error);}
+  mcSpeechUtterance=null;
 }
 
-function mcQueueUtterance(text,lang='en-US'){
-  const synth = window.speechSynthesis;
-  const utterance = new window.SpeechSynthesisUtterance(String(text));
-  utterance.lang = lang || 'en-US';
-  utterance.rate = 0.88;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-
-  // Solicita las voces disponibles; si iOS aún no las cargó, usa la voz
-  // predeterminada del sistema en lugar de impedir la reproducción.
-  let voices = [];
-  try{ voices = synth.getVoices ? synth.getVoices() : []; }catch(error){}
-  const wanted = utterance.lang.toLowerCase();
-  const voice = voices.find(v => v.lang && v.lang.toLowerCase() === wanted)
-    || voices.find(v => v.lang && v.lang.toLowerCase().split('-')[0] === wanted.split('-')[0]);
-  if(voice) utterance.voice = voice;
-
-  mcSpeechUtterance = utterance;
-  mcSpeechUtterances.push(utterance);
-
-  const cleanup = () => {
-    mcSpeechUtterances = mcSpeechUtterances.filter(item => item !== utterance);
-    if(mcSpeechUtterance === utterance){
-      mcSpeechUtterance = mcSpeechUtterances[mcSpeechUtterances.length-1] || null;
-    }
-  };
-  utterance.onend = cleanup;
-  utterance.onerror = event => {
-    console.warn('Error de reproducción de voz:', event && event.error ? event.error : event);
-    cleanup();
-  };
-
-  // Importante: speak() se ejecuta sincrónicamente dentro del toque del usuario.
-  synth.speak(utterance);
+function mcMakeUtterance(text,lang){
+  const utterance=new SpeechSynthesisUtterance(String(text));
+  utterance.lang=lang||'en-US';
+  utterance.rate=0.9;
+  utterance.pitch=1;
+  utterance.volume=1;
+  try{
+    const voices=window.speechSynthesis.getVoices();
+    const wanted=utterance.lang.toLowerCase();
+    const voice=voices.find(v=>v.lang&&v.lang.toLowerCase()===wanted)
+      ||voices.find(v=>v.lang&&v.lang.toLowerCase().split('-')[0]===wanted.split('-')[0]);
+    if(voice)utterance.voice=voice;
+  }catch(error){console.warn('Se usará la voz predeterminada:',error);}
   return utterance;
 }
 
+function mcPlayUtterance(text,lang,token,onend){
+  const synth=window.speechSynthesis;
+  if(token!==mcSpeechSequenceToken)return;
+  const utterance=mcMakeUtterance(text,lang);
+  mcSpeechUtterance=utterance;
+  utterance.onend=()=>{
+    if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
+    if(token===mcSpeechSequenceToken&&onend)onend();
+  };
+  utterance.onerror=event=>{
+    console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
+    if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
+  };
+  // speak() se invoca inmediatamente desde el toque del usuario.
+  synth.speak(utterance);
+  // Safari puede dejar el sintetizador pausado después de una cancelación.
+  window.setTimeout(()=>{
+    if(token===mcSpeechSequenceToken&&synth.paused){
+      try{synth.resume();}catch(error){console.warn('No se pudo reanudar la voz:',error);}
+    }
+  },180);
+}
+
 function speak(t,lang='en-US'){
-  const synth = window.speechSynthesis;
-  const textToRead = String(t || '').trim();
-  if(!textToRead){ alert('No hay texto para escuchar.'); return; }
-  if(!synth || !window.SpeechSynthesisUtterance){
+  const textToRead=String(t||'').trim();
+  const synth=window.speechSynthesis;
+  if(!textToRead){alert('No hay texto para escuchar.');return;}
+  if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){
     alert('La lectura de voz no está disponible en este navegador. Abre la aplicación en Safari actualizado.');
     return;
   }
-  try{
-    // Evita cancelar innecesariamente la voz en iPhone: cancel() antes de cada
-    // reproducción puede dejar muda la siguiente locución en algunas versiones.
-    if(synth.speaking || synth.pending || synth.paused) mcClearSpeech(synth);
-    try{ synth.resume(); }catch(error){}
-    mcQueueUtterance(textToRead,lang);
-  }catch(error){
+  mcStopSpeech();
+  const token=mcSpeechSequenceToken;
+  try{mcPlayUtterance(textToRead,lang,token,null);}
+  catch(error){
     console.error('No se pudo iniciar la lectura:',error);
-    alert('No se pudo iniciar el audio. Cierra y vuelve a abrir Safari e inténtalo otra vez.');
+    alert('Safari no pudo iniciar el audio. Comprueba que el iPhone tenga el volumen activo e inténtalo otra vez.');
   }
 }
 
 function speakSequence(items){
-  const synth = window.speechSynthesis;
-  if(!synth || !window.SpeechSynthesisUtterance){
-    alert('La lectura de voz no está disponible en este navegador.');
-    return;
+  const synth=window.speechSynthesis;
+  if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){
+    alert('La lectura de voz no está disponible en este navegador.');return;
   }
-  const queue = items.filter(item => item && String(item.text || '').trim());
-  if(!queue.length){ alert('No hay texto para escuchar.'); return; }
-  try{
-    if(synth.speaking || synth.pending || synth.paused) mcClearSpeech(synth);
-    try{ synth.resume(); }catch(error){}
-    const playNext = index => {
-      if(index >= queue.length) return;
-      const utterance = mcQueueUtterance(String(queue[index].text),queue[index].lang || 'en-US');
-      utterance.onend = () => {
-        mcSpeechUtterances = mcSpeechUtterances.filter(item => item !== utterance);
-        if(mcSpeechUtterance === utterance){
-          mcSpeechUtterance = mcSpeechUtterances[mcSpeechUtterances.length-1] || null;
-        }
-        playNext(index+1);
-      };
-    };
-    playNext(0);
-  }catch(error){
+  const queue=(items||[]).filter(item=>item&&String(item.text||'').trim());
+  if(!queue.length){alert('No hay texto para escuchar.');return;}
+  mcStopSpeech();
+  const token=mcSpeechSequenceToken;
+  let index=0;
+  const next=()=>{
+    if(token!==mcSpeechSequenceToken||index>=queue.length)return;
+    const item=queue[index++];
+    try{mcPlayUtterance(String(item.text),item.lang||'en-US',token,next);}
+    catch(error){console.error('Error en la secuencia de audio:',error);}
+  };
+  try{next();}
+  catch(error){
     console.error('Error al iniciar la secuencia de audio:',error);
     alert('No se pudo iniciar el audio. Inténtalo nuevamente.');
   }
