@@ -755,36 +755,11 @@ $('twelveMic').onclick=()=>{$('twelveStatus').textContent='🎙️ Escuchando…
 $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}else{$('twelveStatus').innerHTML=twelveCorrect>=9?`<span class="correct">✓ Resultado: ${twelveCorrect}/12. ¡Buen trabajo!</span>`:`Resultado: ${twelveCorrect}/12. Sigue practicando.`;$('twelveAnswer').textContent='Simulacro terminado. Pulsa “Comenzar simulacro de 12” para repetir.';$('twelveScore').textContent=`Resultado final: ${twelveCorrect} de 12`;}};
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
-// Compatibilidad de voz con Safari en iPhone.
-// Safari necesita que el audio se habilite desde el primer toque del usuario.
+// Reproducción de voz compatible con Safari en iPhone y otros navegadores.
+// No se utiliza una locución silenciosa de desbloqueo: Safari puede dejarla
+// pendiente y bloquear detrás de ella el audio que el usuario desea escuchar.
 let mcSpeechUtterance = null;
 let mcSpeechUtterances = [];
-let mcSpeechUnlocked = false;
-function mcUnlockSpeech(){
-  const synth=window.speechSynthesis;
-  if(mcSpeechUnlocked || !synth || !window.SpeechSynthesisUtterance)return;
-  try{
-    const primer=new window.SpeechSynthesisUtterance(' ');
-    primer.lang='en-US';
-    primer.volume=0;
-    primer.rate=10;
-    mcSpeechUtterance=primer;
-    mcSpeechUtterances.push(primer);
-    const cleanup=()=>{
-      mcSpeechUtterances=mcSpeechUtterances.filter(item=>item!==primer);
-      if(mcSpeechUtterance===primer)mcSpeechUtterance=mcSpeechUtterances[mcSpeechUtterances.length-1]||null;
-    };
-    primer.onend=cleanup;
-    primer.onerror=cleanup;
-    synth.speak(primer);
-    mcSpeechUnlocked=true;
-  }catch(error){
-    console.warn('No se pudo preparar el audio de Safari:',error);
-  }
-}
-// El primer toque/clic habilita el motor de voz de Safari.
-document.addEventListener('touchstart',mcUnlockSpeech,{once:true,passive:true});
-document.addEventListener('click',mcUnlockSpeech,{once:true});
 function mcQueueUtterance(text,lang='en-US'){
   const synth=window.speechSynthesis;
   const utterance=new window.SpeechSynthesisUtterance(String(text));
@@ -792,6 +767,11 @@ function mcQueueUtterance(text,lang='en-US'){
   utterance.rate=0.85;
   utterance.pitch=1;
   utterance.volume=1;
+  const voices=synth.getVoices ? synth.getVoices() : [];
+  const language=(utterance.lang||'en-US').toLowerCase();
+  const voice=voices.find(item=>item.lang && item.lang.toLowerCase()===language)
+    || voices.find(item=>item.lang && item.lang.toLowerCase().startsWith(language.split('-')[0]));
+  if(voice)utterance.voice=voice;
   mcSpeechUtterance=utterance;
   mcSpeechUtterances.push(utterance);
   const cleanup=()=>{
@@ -804,6 +784,15 @@ function mcQueueUtterance(text,lang='en-US'){
     cleanup();
   };
   synth.speak(utterance);
+  return utterance;
+}
+function mcPrepareSpeech(synth){
+  // Cada toque inicia una reproducción nueva y evita que una cola anterior
+  // o una frase silenciosa impida escuchar la selección actual.
+  synth.cancel();
+  synth.resume();
+  mcSpeechUtterance=null;
+  mcSpeechUtterances=[];
 }
 function speak(t,lang='en-US'){
   const synth=window.speechSynthesis;
@@ -811,7 +800,7 @@ function speak(t,lang='en-US'){
   if(!textToRead){alert('No hay texto para escuchar.');return;}
   if(!synth || !window.SpeechSynthesisUtterance){alert('La lectura de voz no está disponible en este navegador.');return;}
   try{
-    mcUnlockSpeech();
+    mcPrepareSpeech(synth);
     mcQueueUtterance(textToRead,lang);
   }catch(error){
     console.error('Error al iniciar la lectura:',error);
@@ -824,10 +813,19 @@ function speakSequence(items){
   const queue=items.filter(item=>item && String(item.text||'').trim());
   if(!queue.length){alert('No hay texto para escuchar.');return;}
   try{
-    mcUnlockSpeech();
-    // Encolar todas las partes durante el toque del usuario; Safari reproduce
-    // las frases en orden y conserva las referencias hasta que terminan.
-    queue.forEach(part=>mcQueueUtterance(String(part.text),part.lang||'en-US'));
+    mcPrepareSpeech(synth);
+    // Mantiene el orden de los idiomas sin dejar varias locuciones pendientes
+    // simultáneamente, algo que Safari en iPhone no siempre procesa bien.
+    const playNext=index=>{
+      if(index>=queue.length)return;
+      const utterance=mcQueueUtterance(String(queue[index].text),queue[index].lang||'en-US');
+      utterance.onend=()=>{
+        mcSpeechUtterances=mcSpeechUtterances.filter(item=>item!==utterance);
+        if(mcSpeechUtterance===utterance)mcSpeechUtterance=mcSpeechUtterances[mcSpeechUtterances.length-1]||null;
+        playNext(index+1);
+      };
+    };
+    playNext(0);
   }catch(error){
     console.error('Error al iniciar la secuencia de audio:',error);
     alert('No se pudo iniciar el audio: '+(error.message||error));
