@@ -789,17 +789,38 @@ try{
 function mcStopSpeech(){
   mcSpeechSequenceToken++;
   const synth=mcSpeechEngine();
-  try{ if(synth) synth.cancel(); }catch(error){console.warn(error);}
+  try{ if(synth) synth.cancel(); }catch(error){console.warn('No se pudo detener el audio:',error);}
   mcSpeechUtterance=null;
 }
 
+// Safari/iOS puede dejar la cola de voz bloqueada si se llama a cancel()
+// e inmediatamente a speak(). Solo cancelamos cuando hay audio activo y,
+// en ese caso, esperamos brevemente antes de iniciar la nueva frase.
+function mcBeginSpeech(){
+  const synth=mcSpeechEngine();
+  const wasActive=!!(synth && (synth.speaking || synth.pending));
+  if(wasActive){
+    try{ synth.cancel(); }catch(error){console.warn('No se pudo limpiar la cola de voz:',error);}
+  }
+  mcSpeechSequenceToken++;
+  mcSpeechUtterance=null;
+  return {token:mcSpeechSequenceToken, delay:wasActive?180:0};
+}
+
+function mcSetSpeechStatus(message){
+  const ids=['officerVoiceStatus','civicsSpeechStatus','interviewSpeechStatus','studyStatus','writeFeedback','phraseStatus'];
+  for(const id of ids){
+    const el=$(id);
+    if(el){el.textContent=message;break;}
+  }
+}
+
 function mcMakeUtterance(text,lang){
-  const U=mcUtteranceConstructor();
-  if(typeof U!=='function') throw new Error('La lectura de voz no está disponible en este navegador.');
-  const utterance=new U(String(text));
-  // No asignar utterance.voice manualmente: en Safari/iOS getVoices() puede
-  // devolver una lista vacía o incompleta al cargar la página. Dejar que
-  // WebKit elija la voz instalada según el idioma evita fijar una voz inválida.
+  const Utterance=mcUtteranceConstructor();
+  if(typeof Utterance!=='function'){
+    throw new Error('El navegador no ofrece SpeechSynthesisUtterance.');
+  }
+  const utterance=new Utterance(String(text==null?'':text));
   utterance.lang=lang||'en-US';
   utterance.rate=0.9;
   utterance.pitch=1;
@@ -813,10 +834,13 @@ function mcPlayUtterance(text,lang,token,onend){
   if(token!==mcSpeechSequenceToken) return;
   const utterance=mcMakeUtterance(text,lang);
   mcSpeechUtterance=utterance;
+  let started=false;
   utterance.onstart=()=>{
+    started=true;
     console.log('Audio iniciado:',utterance.lang,utterance.voice&&utterance.voice.name);
-    const status=$('officerVoiceStatus') || $('civicsSpeechStatus') || $('interviewSpeechStatus') || $('studyStatus');
-    if(status) status.textContent='🔊 Reproduciendo audio…';
+    mcSetSpeechStatus('🔊 Reproduciendo audio…');
+    // En iOS, resume() después de speak() ayuda a recuperar colas pausadas.
+    try{if(synth.paused && typeof synth.resume==='function')synth.resume();}catch(error){console.warn(error);}
   };
   utterance.onend=()=>{
     if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
@@ -825,25 +849,16 @@ function mcPlayUtterance(text,lang,token,onend){
   utterance.onerror=event=>{
     console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
     if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
-    const status=$('officerVoiceStatus') || $('civicsSpeechStatus') || $('interviewSpeechStatus') || $('studyStatus');
-    if(status) status.textContent='No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.';
+    if(token===mcSpeechSequenceToken){
+      mcSetSpeechStatus('No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.');
+    }
   };
-  // Reanudar únicamente si el motor informa que está pausado.
-  // speak() se ejecuta sin temporizadores dentro del gesto del usuario.
-  if(synth.paused && typeof synth.resume==='function'){
-    try{ synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
-  }
   synth.speak(utterance);
-}
-
-function mcBeginSpeech(){
-  const synth=mcSpeechEngine();
-  if(synth && (synth.speaking || synth.pending)){
-    try{ synth.cancel(); }catch(error){console.warn('cancel:',error);}
-  }
-  mcSpeechSequenceToken++;
-  mcSpeechUtterance=null;
-  return mcSpeechSequenceToken;
+  // Segundo intento de reanudación para Safari cuando la cola queda pausada.
+  window.setTimeout(()=>{
+    if(token!==mcSpeechSequenceToken || mcSpeechUtterance!==utterance) return;
+    try{if(synth.paused && typeof synth.resume==='function')synth.resume();}catch(error){console.warn(error);}
+  },120);
 }
 
 function speak(t,lang='en-US'){
@@ -853,12 +868,17 @@ function speak(t,lang='en-US'){
   if(!synth || typeof synth.speak!=='function' || typeof mcUtteranceConstructor()!=='function'){
     alert('Safari no tiene disponible la lectura de voz para esta página.');return;
   }
-  const token=mcBeginSpeech();
-  try{ mcPlayUtterance(textToRead,lang,token,null); }
-  catch(error){
-    console.error('No se pudo iniciar la lectura:',error);
-    alert('Safari no pudo iniciar el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
-  }
+  const run=mcBeginSpeech();
+  const play=()=>{
+    if(run.token!==mcSpeechSequenceToken)return;
+    try{mcPlayUtterance(textToRead,lang,run.token,null);}
+    catch(error){
+      console.error('No se pudo iniciar la lectura:',error);
+      mcSetSpeechStatus('Safari no pudo iniciar el audio. Vuelve a pulsar Escuchar.');
+      alert('Safari no pudo iniciar el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
+    }
+  };
+  if(run.delay)window.setTimeout(play,run.delay);else play();
 }
 
 function speakSequence(items){
@@ -868,16 +888,24 @@ function speakSequence(items){
   }
   const queue=(items||[]).filter(item=>item&&String(item.text||'').trim());
   if(!queue.length){alert('No hay texto para escuchar.');return;}
-  const token=mcBeginSpeech();
+  const run=mcBeginSpeech();
   let index=0;
   const next=()=>{
-    if(token!==mcSpeechSequenceToken || index>=queue.length) return;
+    if(run.token!==mcSpeechSequenceToken || index>=queue.length)return;
     const item=queue[index++];
-    try{ mcPlayUtterance(String(item.text),item.lang||'en-US',token,next); }
-    catch(error){
-      console.error('Error en la secuencia de audio:',error);
-      alert('No se pudo reproducir el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
-    }
+    const play=()=>{
+      if(run.token!==mcSpeechSequenceToken)return;
+      try{mcPlayUtterance(String(item.text),item.lang||'en-US',run.token,()=>{
+        // Una pausa corta evita que Safari omita la siguiente frase de la secuencia.
+        window.setTimeout(next,160);
+      });}
+      catch(error){
+        console.error('Error en la secuencia de audio:',error);
+        mcSetSpeechStatus('No se pudo reproducir el audio. Vuelve a pulsar Escuchar.');
+        alert('No se pudo reproducir el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
+      }
+    };
+    if(index===1 && run.delay)window.setTimeout(play,run.delay);else play();
   };
   next();
 }
@@ -1063,7 +1091,7 @@ function speakOfficer(text,lang){
  if(status)status.textContent="La entrevistadora está hablando…";
  speak(text,lang);
  const duration=Math.max(1400,Math.min(12000,String(text||"").length*65));
- window.setTimeout(()=>{if(avatar)avatar.classList.remove("speaking");if(status)status.textContent="Puedes volver a escuchar la pregunta cuando quieras.";},duration);
+ window.setTimeout(()=>{if(avatar)avatar.classList.remove("speaking");},duration);
 }
 function renderSimulation(){
  const st=simulationStages[simStage],it=getSimulationItem();
