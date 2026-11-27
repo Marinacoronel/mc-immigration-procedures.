@@ -794,17 +794,10 @@ function mcMakeUtterance(text,lang){
   const U=mcUtteranceConstructor();
   if(typeof U!=='function') throw new Error('La lectura de voz no está disponible en este navegador.');
   const utterance=new U(String(text));
-  const wanted=(lang||'en-US').toLowerCase();
-  const voices=mcGetVoices();
-  // Safari/iOS puede no elegir una voz correcta solo con utterance.lang.
-  // Asignamos una voz instalada del idioma solicitado cuando está disponible.
-  let voice=voices.find(v=>(v.lang||'').toLowerCase()===wanted);
-  if(!voice){
-    const base=wanted.split('-')[0];
-    voice=voices.find(v=>(v.lang||'').toLowerCase().startsWith(base+'-'));
-  }
-  if(voice) utterance.voice=voice;
-  utterance.lang=voice && voice.lang ? voice.lang : (lang||'en-US');
+  // No asignar utterance.voice manualmente: en Safari/iOS getVoices() puede
+  // devolver una lista vacía o incompleta al cargar la página. Dejar que
+  // WebKit elija la voz instalada según el idioma evita fijar una voz inválida.
+  utterance.lang=lang||'en-US';
   utterance.rate=0.9;
   utterance.pitch=1;
   utterance.volume=1;
@@ -832,11 +825,12 @@ function mcPlayUtterance(text,lang,token,onend){
     const status=$('officerVoiceStatus');
     if(status) status.textContent='Safari no pudo iniciar la voz. Vuelve a pulsar Escuchar.';
   };
-  // La llamada speak permanece síncrona dentro del toque del usuario.
-  try{ if(synth.paused && typeof synth.resume==='function') synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
+  // Mantener speak() dentro del toque del usuario. En Safari, llamar resume()
+  // antes y después de speak() puede interferir con el inicio de la locución.
   synth.speak(utterance);
-  // En algunas versiones de WebKit el motor queda pausado al reanudarse la página.
-  try{ if(synth.paused && typeof synth.resume==='function') synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
+  if(synth.paused && typeof synth.resume==='function'){
+    try{ synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
+  }
 }
 
 function mcBeginSpeech(){
