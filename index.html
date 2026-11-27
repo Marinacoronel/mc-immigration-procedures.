@@ -806,18 +806,13 @@ function mcStopSpeech(){
   mcSpeechUtterance=null;
 }
 
-// Safari/iOS puede dejar la cola de voz bloqueada si se llama a cancel()
-// e inmediatamente a speak(). Solo cancelamos cuando hay audio activo y,
-// en ese caso, esperamos brevemente antes de iniciar la nueva frase.
+// Iniciar la lectura directamente desde el toque del usuario.
+// En Safari/iOS, cancelar una cola solo porque `pending` sea true y
+// reintentar mediante setTimeout puede perder la activación del botón.
+// No cancelamos lecturas pendientes: speechSynthesis administra su cola.
 function mcBeginSpeech(){
-  const synth=mcSpeechEngine();
-  const wasActive=!!(synth && (synth.speaking || synth.pending));
-  if(wasActive){
-    try{ synth.cancel(); }catch(error){console.warn('No se pudo limpiar la cola de voz:',error);}
-  }
   mcSpeechSequenceToken++;
-  mcSpeechUtterance=null;
-  return {token:mcSpeechSequenceToken, delay:wasActive?180:0};
+  return {token:mcSpeechSequenceToken, delay:0};
 }
 
 function mcSetSpeechStatus(message){
