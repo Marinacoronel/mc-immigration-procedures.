@@ -108,7 +108,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
       <button class="secondary" type="button" id="loginAccountBtn">Iniciar sesión</button>
     </div>
     <p class="small" id="accountStatus" role="status" aria-live="polite"></p>
-    <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
+    
   </section>
 
   <section class="payment-panel stage-hidden" id="paymentPanel" aria-labelledby="paymentTitle">
@@ -276,6 +276,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
     <p class="small">Cada palabra incluye su significado en inglés y su traducción o explicación en español.</p>
     <div id="definitionsList"></div>
   </section>
+    <div class="actions" id="appLogoutActions">
+      <button class="secondary hidden" type="button" id="logoutAccountBtn">Cerrar sesión</button>
+    </div>
   </div>
   <footer>MC Immigration Procedures · Material de práctica para estudiantes de ciudadanía.</footer>
 </main>
@@ -812,8 +815,8 @@ function mcPlayUtterance(text,lang,token,onend){
   mcSpeechUtterance=utterance;
   utterance.onstart=()=>{
     console.log('Audio iniciado:',utterance.lang,utterance.voice&&utterance.voice.name);
-    const status=$('officerVoiceStatus');
-    if(status) status.textContent='La entrevistadora está hablando…';
+    const status=$('officerVoiceStatus') || $('civicsSpeechStatus') || $('interviewSpeechStatus') || $('studyStatus');
+    if(status) status.textContent='🔊 Reproduciendo audio…';
   };
   utterance.onend=()=>{
     if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
@@ -822,15 +825,15 @@ function mcPlayUtterance(text,lang,token,onend){
   utterance.onerror=event=>{
     console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
     if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
-    const status=$('officerVoiceStatus');
-    if(status) status.textContent='Safari no pudo iniciar la voz. Vuelve a pulsar Escuchar.';
+    const status=$('officerVoiceStatus') || $('civicsSpeechStatus') || $('interviewSpeechStatus') || $('studyStatus');
+    if(status) status.textContent='No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.';
   };
-  // Mantener speak() dentro del toque del usuario. En Safari, llamar resume()
-  // antes y después de speak() puede interferir con el inicio de la locución.
-  synth.speak(utterance);
+  // Reanudar únicamente si el motor informa que está pausado.
+  // speak() se ejecuta sin temporizadores dentro del gesto del usuario.
   if(synth.paused && typeof synth.resume==='function'){
     try{ synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
   }
+  synth.speak(utterance);
 }
 
 function mcBeginSpeech(){
