@@ -756,7 +756,7 @@ $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}el
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
 // Motor central de lectura en voz alta.
-// Inicializa SpeechSynthesis de forma compatible con Safari/iOS.
+// Preparación de voces y selección explícita para Safari/iOS.
 let mcSpeechUtterance = null;
 let mcSpeechSequenceToken = 0;
 
@@ -766,16 +766,19 @@ function mcSpeechEngine(){
 function mcUtteranceConstructor(){
   return window.SpeechSynthesisUtterance || window.webkitSpeechSynthesisUtterance || null;
 }
-function mcPrimeSpeech(){
+function mcGetVoices(){
   const synth=mcSpeechEngine();
-  if(!synth)return;
-  // En Safari las voces pueden cargarse de forma diferida.
-  try{ if(typeof synth.getVoices==='function') synth.getVoices(); }catch(error){console.warn('No se pudieron consultar las voces:',error);}
+  if(!synth || typeof synth.getVoices!=='function') return [];
+  try { return synth.getVoices() || []; }
+  catch(error){ console.warn('No se pudieron consultar las voces:',error); return []; }
+}
+function mcPrimeSpeech(){
+  mcGetVoices();
 }
 mcPrimeSpeech();
 try{
   const initialSynth=mcSpeechEngine();
-  if(initialSynth&&'onvoiceschanged' in initialSynth){
+  if(initialSynth && 'onvoiceschanged' in initialSynth){
     initialSynth.onvoiceschanged=()=>mcPrimeSpeech();
   }
 }catch(error){console.warn('No se pudo preparar la lista de voces:',error);}
@@ -789,9 +792,19 @@ function mcStopSpeech(){
 
 function mcMakeUtterance(text,lang){
   const U=mcUtteranceConstructor();
-  if(typeof U!=='function')throw new Error('La lectura de voz no está disponible en este navegador.');
+  if(typeof U!=='function') throw new Error('La lectura de voz no está disponible en este navegador.');
   const utterance=new U(String(text));
-  utterance.lang=lang||'en-US';
+  const wanted=(lang||'en-US').toLowerCase();
+  const voices=mcGetVoices();
+  // Safari/iOS puede no elegir una voz correcta solo con utterance.lang.
+  // Asignamos una voz instalada del idioma solicitado cuando está disponible.
+  let voice=voices.find(v=>(v.lang||'').toLowerCase()===wanted);
+  if(!voice){
+    const base=wanted.split('-')[0];
+    voice=voices.find(v=>(v.lang||'').toLowerCase().startsWith(base+'-'));
+  }
+  if(voice) utterance.voice=voice;
+  utterance.lang=voice && voice.lang ? voice.lang : (lang||'en-US');
   utterance.rate=0.9;
   utterance.pitch=1;
   utterance.volume=1;
@@ -800,39 +813,36 @@ function mcMakeUtterance(text,lang){
 
 function mcPlayUtterance(text,lang,token,onend){
   const synth=mcSpeechEngine();
-  if(!synth||typeof synth.speak!=='function')throw new Error('Safari no ofrece el motor de lectura de voz.');
-  if(token!==mcSpeechSequenceToken)return;
-  mcPrimeSpeech();
+  if(!synth || typeof synth.speak!=='function') throw new Error('Safari no ofrece el motor de lectura de voz.');
+  if(token!==mcSpeechSequenceToken) return;
   const utterance=mcMakeUtterance(text,lang);
   mcSpeechUtterance=utterance;
   utterance.onstart=()=>{
-    console.log('Audio iniciado:',utterance.lang);
+    console.log('Audio iniciado:',utterance.lang,utterance.voice&&utterance.voice.name);
     const status=$('officerVoiceStatus');
-    if(status)status.textContent='La entrevistadora está hablando…';
+    if(status) status.textContent='La entrevistadora está hablando…';
   };
   utterance.onend=()=>{
-    if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
-    if(token===mcSpeechSequenceToken&&onend)onend();
+    if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
+    if(token===mcSpeechSequenceToken && onend) onend();
   };
   utterance.onerror=event=>{
     console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
-    if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
+    if(mcSpeechUtterance===utterance) mcSpeechUtterance=null;
     const status=$('officerVoiceStatus');
-    if(status)status.textContent='Safari no pudo iniciar la voz. Vuelve a pulsar Escuchar.';
-    if(event&&event.error&&event.error!=='canceled'&&event.error!=='interrupted'){
-      console.warn('Detalle del error de voz:',event.error);
-    }
+    if(status) status.textContent='Safari no pudo iniciar la voz. Vuelve a pulsar Escuchar.';
   };
-  // speak() se ejecuta sin temporizadores, directamente desde el toque del botón.
-  // En Safari es más fiable encolar primero y reanudar después si quedó pausado.
+  // La llamada speak permanece síncrona dentro del toque del usuario.
+  try{ if(synth.paused && typeof synth.resume==='function') synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
   synth.speak(utterance);
-  try{ if(synth.paused&&typeof synth.resume==='function')synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
+  // En algunas versiones de WebKit el motor queda pausado al reanudarse la página.
+  try{ if(synth.paused && typeof synth.resume==='function') synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
 }
 
 function mcBeginSpeech(){
   const synth=mcSpeechEngine();
-  if(synth&&(synth.speaking||synth.pending)){
-    try{synth.cancel();}catch(error){console.warn('cancel:',error);}
+  if(synth && (synth.speaking || synth.pending)){
+    try{ synth.cancel(); }catch(error){console.warn('cancel:',error);}
   }
   mcSpeechSequenceToken++;
   mcSpeechUtterance=null;
@@ -843,11 +853,11 @@ function speak(t,lang='en-US'){
   const textToRead=String(t==null?'':t).trim();
   const synth=mcSpeechEngine();
   if(!textToRead){alert('No hay texto para escuchar.');return;}
-  if(!synth||typeof synth.speak!=='function'||typeof mcUtteranceConstructor()!=='function'){
+  if(!synth || typeof synth.speak!=='function' || typeof mcUtteranceConstructor()!=='function'){
     alert('Safari no tiene disponible la lectura de voz para esta página.');return;
   }
   const token=mcBeginSpeech();
-  try{mcPlayUtterance(textToRead,lang,token,null);}
+  try{ mcPlayUtterance(textToRead,lang,token,null); }
   catch(error){
     console.error('No se pudo iniciar la lectura:',error);
     alert('Safari no pudo iniciar el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
@@ -856,7 +866,7 @@ function speak(t,lang='en-US'){
 
 function speakSequence(items){
   const synth=mcSpeechEngine();
-  if(!synth||typeof synth.speak!=='function'||typeof mcUtteranceConstructor()!=='function'){
+  if(!synth || typeof synth.speak!=='function' || typeof mcUtteranceConstructor()!=='function'){
     alert('Safari no tiene disponible la lectura de voz para esta página.');return;
   }
   const queue=(items||[]).filter(item=>item&&String(item.text||'').trim());
@@ -864,10 +874,13 @@ function speakSequence(items){
   const token=mcBeginSpeech();
   let index=0;
   const next=()=>{
-    if(token!==mcSpeechSequenceToken||index>=queue.length)return;
+    if(token!==mcSpeechSequenceToken || index>=queue.length) return;
     const item=queue[index++];
-    try{mcPlayUtterance(String(item.text),item.lang||'en-US',token,next);}
-    catch(error){console.error('Error en la secuencia de audio:',error);alert('No se pudo reproducir el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));}
+    try{ mcPlayUtterance(String(item.text),item.lang||'en-US',token,next); }
+    catch(error){
+      console.error('Error en la secuencia de audio:',error);
+      alert('No se pudo reproducir el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
+    }
   };
   next();
 }
