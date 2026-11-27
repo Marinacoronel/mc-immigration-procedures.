@@ -756,32 +756,60 @@ $('twelveNext').onclick=()=>{if(twelveIndex<11){twelveIndex++;renderTwelve();}el
 $('next').onclick=()=>{qi=(qi+1)%order.length;renderQ()};$('prev').onclick=()=>{qi=(qi-1+order.length)%order.length;renderQ()};
 $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}qi=0;renderQ()};
 // Motor central de lectura en voz alta.
-// Se mantiene un único motor para todos los botones Escuchar.
+// Inicializa SpeechSynthesis de forma compatible con Safari/iOS.
 let mcSpeechUtterance = null;
 let mcSpeechSequenceToken = 0;
 
+function mcSpeechEngine(){
+  return window.speechSynthesis || window.webkitSpeechSynthesis || null;
+}
+function mcUtteranceConstructor(){
+  return window.SpeechSynthesisUtterance || window.webkitSpeechSynthesisUtterance || null;
+}
+function mcPrimeSpeech(){
+  const synth=mcSpeechEngine();
+  if(!synth)return;
+  // En Safari las voces pueden cargarse de forma diferida.
+  try{ if(typeof synth.getVoices==='function') synth.getVoices(); }catch(error){console.warn('No se pudieron consultar las voces:',error);}
+}
+mcPrimeSpeech();
+try{
+  const initialSynth=mcSpeechEngine();
+  if(initialSynth&&'onvoiceschanged' in initialSynth){
+    initialSynth.onvoiceschanged=()=>mcPrimeSpeech();
+  }
+}catch(error){console.warn('No se pudo preparar la lista de voces:',error);}
+
 function mcStopSpeech(){
   mcSpeechSequenceToken++;
-  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(error){console.warn(error);}
+  const synth=mcSpeechEngine();
+  try{ if(synth) synth.cancel(); }catch(error){console.warn(error);}
   mcSpeechUtterance=null;
 }
 
 function mcMakeUtterance(text,lang){
-  const U=window.SpeechSynthesisUtterance;
+  const U=mcUtteranceConstructor();
+  if(typeof U!=='function')throw new Error('La lectura de voz no está disponible en este navegador.');
   const utterance=new U(String(text));
   utterance.lang=lang||'en-US';
-  utterance.rate=0.88;
+  utterance.rate=0.9;
   utterance.pitch=1;
   utterance.volume=1;
   return utterance;
 }
 
 function mcPlayUtterance(text,lang,token,onend){
-  const synth=window.speechSynthesis;
+  const synth=mcSpeechEngine();
+  if(!synth||typeof synth.speak!=='function')throw new Error('Safari no ofrece el motor de lectura de voz.');
   if(token!==mcSpeechSequenceToken)return;
+  mcPrimeSpeech();
   const utterance=mcMakeUtterance(text,lang);
   mcSpeechUtterance=utterance;
-  utterance.onstart=()=>console.log('Audio iniciado:',utterance.lang);
+  utterance.onstart=()=>{
+    console.log('Audio iniciado:',utterance.lang);
+    const status=$('officerVoiceStatus');
+    if(status)status.textContent='La entrevistadora está hablando…';
+  };
   utterance.onend=()=>{
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
     if(token===mcSpeechSequenceToken&&onend)onend();
@@ -790,15 +818,19 @@ function mcPlayUtterance(text,lang,token,onend){
     console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
     const status=$('officerVoiceStatus');
-    if(status)status.textContent='No se pudo reproducir el audio. Pulsa Escuchar para intentarlo otra vez.';
+    if(status)status.textContent='Safari no pudo iniciar la voz. Vuelve a pulsar Escuchar.';
+    if(event&&event.error&&event.error!=='canceled'&&event.error!=='interrupted'){
+      console.warn('Detalle del error de voz:',event.error);
+    }
   };
-  // Ambas llamadas ocurren directamente dentro del toque del usuario.
-  try{ synth.resume(); }catch(error){console.warn('resume:',error);}
+  // speak() se ejecuta sin temporizadores, directamente desde el toque del botón.
+  // En Safari es más fiable encolar primero y reanudar después si quedó pausado.
   synth.speak(utterance);
+  try{ if(synth.paused&&typeof synth.resume==='function')synth.resume(); }catch(error){console.warn('No se pudo reanudar la voz:',error);}
 }
 
 function mcBeginSpeech(){
-  const synth=window.speechSynthesis;
+  const synth=mcSpeechEngine();
   if(synth&&(synth.speaking||synth.pending)){
     try{synth.cancel();}catch(error){console.warn('cancel:',error);}
   }
@@ -809,23 +841,23 @@ function mcBeginSpeech(){
 
 function speak(t,lang='en-US'){
   const textToRead=String(t==null?'':t).trim();
-  const synth=window.speechSynthesis;
+  const synth=mcSpeechEngine();
   if(!textToRead){alert('No hay texto para escuchar.');return;}
-  if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){
-    alert('Este navegador no tiene disponible la lectura de voz.');return;
+  if(!synth||typeof synth.speak!=='function'||typeof mcUtteranceConstructor()!=='function'){
+    alert('Safari no tiene disponible la lectura de voz para esta página.');return;
   }
   const token=mcBeginSpeech();
   try{mcPlayUtterance(textToRead,lang,token,null);}
   catch(error){
     console.error('No se pudo iniciar la lectura:',error);
-    alert('No se pudo iniciar el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
+    alert('Safari no pudo iniciar el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));
   }
 }
 
 function speakSequence(items){
-  const synth=window.speechSynthesis;
-  if(!synth||typeof window.SpeechSynthesisUtterance!=='function'){
-    alert('Este navegador no tiene disponible la lectura de voz.');return;
+  const synth=mcSpeechEngine();
+  if(!synth||typeof synth.speak!=='function'||typeof mcUtteranceConstructor()!=='function'){
+    alert('Safari no tiene disponible la lectura de voz para esta página.');return;
   }
   const queue=(items||[]).filter(item=>item&&String(item.text||'').trim());
   if(!queue.length){alert('No hay texto para escuchar.');return;}
@@ -835,7 +867,7 @@ function speakSequence(items){
     if(token!==mcSpeechSequenceToken||index>=queue.length)return;
     const item=queue[index++];
     try{mcPlayUtterance(String(item.text),item.lang||'en-US',token,next);}
-    catch(error){console.error('Error en la secuencia de audio:',error);}
+    catch(error){console.error('Error en la secuencia de audio:',error);alert('No se pudo reproducir el audio: '+(error&&error.message?error.message:'inténtalo otra vez.'));}
   };
   next();
 }
