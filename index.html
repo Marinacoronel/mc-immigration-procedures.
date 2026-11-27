@@ -769,6 +769,19 @@ function mcSpeechEngine(){
 function mcUtteranceConstructor(){
   return window.SpeechSynthesisUtterance || window.webkitSpeechSynthesisUtterance || null;
 }
+function mcMakeUtterance(text,lang){
+  const Utterance=mcUtteranceConstructor();
+  if(typeof Utterance!=='function'){
+    throw new Error('El navegador no ofrece SpeechSynthesisUtterance.');
+  }
+  const utterance=new Utterance(String(text==null?'':text));
+  utterance.lang=lang||'en-US';
+  utterance.rate=0.9;
+  utterance.pitch=1;
+  utterance.volume=1;
+  return utterance;
+}
+
 function mcGetVoices(){
   const synth=mcSpeechEngine();
   if(!synth || typeof synth.getVoices!=='function') return [];
@@ -813,19 +826,6 @@ function mcSetSpeechStatus(message){
     const el=$(id);
     if(el){el.textContent=message;break;}
   }
-}
-
-function mcMakeUtterance(text,lang){
-  const Utterance=mcUtteranceConstructor();
-  if(typeof Utterance!=='function'){
-    throw new Error('El navegador no ofrece SpeechSynthesisUtterance.');
-  }
-  const utterance=new Utterance(String(text==null?'':text));
-  utterance.lang=lang||'en-US';
-  utterance.rate=0.9;
-  utterance.pitch=1;
-  utterance.volume=1;
-  return utterance;
 }
 
 function mcPlayUtterance(text,lang,token,onend){
