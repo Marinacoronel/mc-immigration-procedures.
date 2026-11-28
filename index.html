@@ -762,6 +762,7 @@ $('shuffle').onclick=()=>{for(let i=order.length-1;i>0;i--){let j=Math.floor(Mat
 // La llamada a speak() se ejecuta inmediatamente desde el toque del usuario,
 // sin temporizadores intermedios (importante para Safari en iPhone).
 let mcSpeechUtterance = null;
+let mcSpeechUtterances = [];
 let mcSpeechSequenceToken = 0;
 
 function mcSpeechEngine(){
@@ -776,10 +777,19 @@ function mcMakeUtterance(text,lang){
     throw new Error('El navegador no ofrece SpeechSynthesisUtterance.');
   }
   const utterance=new Utterance(String(text==null?'':text));
-  utterance.lang=lang||'en-US';
+  const wantedLang=lang||'en-US';
+  utterance.lang=wantedLang;
   utterance.rate=0.9;
   utterance.pitch=1;
   utterance.volume=1;
+
+  // Si Safari ya cargó sus voces, seleccionar una compatible.
+  // Si todavía no hay voces disponibles, se conserva la voz predeterminada.
+  const voices=mcGetVoices();
+  const baseLang=wantedLang.toLowerCase().split('-')[0];
+  const exactVoice=voices.find(v=>(v.lang||'').toLowerCase()===wantedLang.toLowerCase());
+  const languageVoice=voices.find(v=>(v.lang||'').toLowerCase().startsWith(baseLang+'-'));
+  if(exactVoice || languageVoice) utterance.voice=exactVoice||languageVoice;
   return utterance;
 }
 function mcGetVoices(){
@@ -792,7 +802,9 @@ function mcPrimeSpeech(){mcGetVoices();}
 mcPrimeSpeech();
 try{
   const initialSynth=mcSpeechEngine();
-  if(initialSynth && 'onvoiceschanged' in initialSynth){
+  if(initialSynth && typeof initialSynth.addEventListener==='function'){
+    initialSynth.addEventListener('voiceschanged',mcPrimeSpeech);
+  }else if(initialSynth && 'onvoiceschanged' in initialSynth){
     initialSynth.onvoiceschanged=mcPrimeSpeech;
   }
 }catch(error){console.warn('No se pudo preparar la lista de voces:',error);}
@@ -802,12 +814,14 @@ function mcStopSpeech(){
   const synth=mcSpeechEngine();
   try{if(synth)synth.cancel();}catch(error){console.warn('No se pudo detener el audio:',error);}
   mcSpeechUtterance=null;
+  mcSpeechUtterances=[];
 }
 function mcBeginSpeech(){
-  // No cancelar la cola al comenzar: iOS Safari puede silenciar la voz
-  // cuando cancel() se ejecuta inmediatamente antes de speak().
+  // No cancelar al iniciar: Safari puede silenciar una voz si cancel() se
+  // ejecuta inmediatamente antes de speak().
   mcSpeechSequenceToken++;
   mcSpeechUtterance=null;
+  mcSpeechUtterances=[];
   return {token:mcSpeechSequenceToken};
 }
 function mcSetSpeechStatus(message){
@@ -823,22 +837,25 @@ function mcPlayUtterance(text,lang,token,onend){
   if(token!==mcSpeechSequenceToken)return;
   const utterance=mcMakeUtterance(text,lang);
   mcSpeechUtterance=utterance;
+  mcSpeechUtterances=[utterance];
   utterance.onstart=()=>{
     mcSetSpeechStatus('🔊 Reproduciendo audio…');
   };
   utterance.onend=()=>{
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
+    mcSpeechUtterances=[];
     if(token===mcSpeechSequenceToken && onend)onend();
   };
   utterance.onerror=event=>{
     console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
+    mcSpeechUtterances=[];
     if(token===mcSpeechSequenceToken){
       mcSetSpeechStatus('No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.');
     }
   };
-  // Iniciar directamente desde el toque del usuario. No llamar cancel()
-  // antes de speak(): en iPhone Safari esa combinación puede dejarlo mudo.
+  // resume() debe ocurrir antes de speak(), y speak() directamente dentro
+  // del toque del usuario para conservar la activación de Safari iOS.
   try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
   synth.speak(utterance);
 }
@@ -866,26 +883,29 @@ function speakSequence(items){
   if(!queue.length){alert('No hay texto para escuchar.');return;}
   const run=mcBeginSpeech();
   try{
-    // Encolar las frases inmediatamente durante el mismo toque del usuario.
-    queue.forEach((item,index)=>{
-      const utterance=mcMakeUtterance(String(item.text),item.lang||'en-US');
+    // Mantener vivas todas las instancias y reanudar antes de encolarlas.
+    try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
+    mcSpeechUtterances=queue.map(item=>mcMakeUtterance(String(item.text),item.lang||'en-US'));
+    mcSpeechUtterances.forEach((utterance,index)=>{
       utterance.onstart=()=>mcSetSpeechStatus('🔊 Reproduciendo audio…');
       utterance.onend=()=>{
-        if(index===queue.length-1 && run.token===mcSpeechSequenceToken){
+        if(index===mcSpeechUtterances.length-1 && run.token===mcSpeechSequenceToken){
           mcSpeechUtterance=null;
+          mcSpeechUtterances=[];
           mcSetSpeechStatus('Audio terminado.');
         }
       };
       utterance.onerror=event=>{
         console.error('Error en la secuencia de audio:',event&&event.error?event.error:event);
         if(run.token===mcSpeechSequenceToken){
+          mcSpeechUtterance=null;
+          mcSpeechUtterances=[];
           mcSetSpeechStatus('No se pudo reproducir el audio. Vuelve a pulsar Escuchar.');
         }
       };
-      mcSpeechUtterance=utterance;
-      synth.speak(utterance);
     });
-    try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
+    mcSpeechUtterance=mcSpeechUtterances[0]||null;
+    mcSpeechUtterances.forEach(utterance=>synth.speak(utterance));
   }catch(error){
     console.error('Error en la secuencia de audio:',error);
     mcSetSpeechStatus('No se pudo reproducir el audio. Vuelve a pulsar Escuchar.');
