@@ -777,17 +777,13 @@ function mcMakeUtterance(text,lang){
     throw new Error('El navegador no ofrece SpeechSynthesisUtterance.');
   }
   const utterance=new Utterance(String(text==null?'':text));
-  const wantedLang=lang||'en-US';
-  utterance.lang=wantedLang;
+  // Safari en iOS puede anunciar onstart pero quedar en silencio cuando
+  // se asigna manualmente una voz obtenida con getVoices(). No asignamos
+  // utterance.voice: dejamos que iOS elija la voz instalada para el idioma.
+  utterance.lang=lang||'en-US';
   utterance.rate=0.9;
   utterance.pitch=1;
   utterance.volume=1;
-
-  // Compatibilidad iOS Safari: no forzar un objeto SpeechSynthesisVoice.
-  // En iPhone, getVoices() puede devolver voces antes de que el motor de
-  // audio esté listo; asignar una de ellas puede disparar onstart y quedar
-  // sin sonido. Dejamos que iOS elija su voz del sistema según utterance.lang.
-  // Esto conserva inglés/español y evita depender de voces descargadas.
   return utterance;
 }
 function mcGetVoices(){
@@ -860,7 +856,7 @@ function mcPlayUtterance(text,lang,token,onend){
   };
   // resume() debe ocurrir antes de speak(), y speak() directamente dentro
   // del toque del usuario para conservar la activación de Safari iOS.
-  try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
+  try{if(typeof synth.resume==='function')synth.resume();}catch(error){console.warn('No se pudo reanudar el motor de voz:',error);}
   synth.speak(utterance);
 }
 function speak(t,lang='en-US'){
@@ -888,7 +884,7 @@ function speakSequence(items){
   const run=mcBeginSpeech();
   try{
     // Mantener vivas todas las instancias y reanudar antes de encolarlas.
-    try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
+    try{if(typeof synth.resume==='function')synth.resume();}catch(error){console.warn('No se pudo reanudar el motor de voz:',error);}
     mcSpeechUtterances=queue.map(item=>mcMakeUtterance(String(item.text),item.lang||'en-US'));
     mcSpeechUtterances.forEach((utterance,index)=>{
       utterance.onstart=()=>mcSetSpeechStatus('🔊 Reproduciendo audio…');
