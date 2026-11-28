@@ -783,13 +783,11 @@ function mcMakeUtterance(text,lang){
   utterance.pitch=1;
   utterance.volume=1;
 
-  // Si Safari ya cargó sus voces, seleccionar una compatible.
-  // Si todavía no hay voces disponibles, se conserva la voz predeterminada.
-  const voices=mcGetVoices();
-  const baseLang=wantedLang.toLowerCase().split('-')[0];
-  const exactVoice=voices.find(v=>(v.lang||'').toLowerCase()===wantedLang.toLowerCase());
-  const languageVoice=voices.find(v=>(v.lang||'').toLowerCase().startsWith(baseLang+'-'));
-  if(exactVoice || languageVoice) utterance.voice=exactVoice||languageVoice;
+  // Compatibilidad iOS Safari: no forzar un objeto SpeechSynthesisVoice.
+  // En iPhone, getVoices() puede devolver voces antes de que el motor de
+  // audio esté listo; asignar una de ellas puede disparar onstart y quedar
+  // sin sonido. Dejamos que iOS elija su voz del sistema según utterance.lang.
+  // Esto conserva inglés/español y evita depender de voces descargadas.
   return utterance;
 }
 function mcGetVoices(){
@@ -840,6 +838,8 @@ function mcPlayUtterance(text,lang,token,onend){
   mcSpeechUtterances=[utterance];
   utterance.onstart=()=>{
     mcSetSpeechStatus('🔊 Reproduciendo audio…');
+    const officerStatus=$('officerVoiceStatus');
+    if(officerStatus) officerStatus.textContent='🔊 Reproduciendo audio…';
   };
   utterance.onend=()=>{
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
@@ -847,11 +847,15 @@ function mcPlayUtterance(text,lang,token,onend){
     if(token===mcSpeechSequenceToken && onend)onend();
   };
   utterance.onerror=event=>{
-    console.error('Error de lectura en voz alta:',event&&event.error?event.error:event);
+    const errorName=event&&event.error?event.error:'error de Safari';
+    console.error('Error de lectura en voz alta:',errorName,event);
     if(mcSpeechUtterance===utterance)mcSpeechUtterance=null;
     mcSpeechUtterances=[];
     if(token===mcSpeechSequenceToken){
-      mcSetSpeechStatus('No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.');
+      const message='Safari no pudo reproducir el audio ('+errorName+'). Vuelve a pulsar Escuchar.';
+      mcSetSpeechStatus(message);
+      const officerStatus=$('officerVoiceStatus');
+      if(officerStatus) officerStatus.textContent=message;
     }
   };
   // resume() debe ocurrir antes de speak(), y speak() directamente dentro
