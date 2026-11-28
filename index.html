@@ -804,15 +804,9 @@ function mcStopSpeech(){
   mcSpeechUtterance=null;
 }
 function mcBeginSpeech(){
+  // No cancelar la cola al comenzar: iOS Safari puede silenciar la voz
+  // cuando cancel() se ejecuta inmediatamente antes de speak().
   mcSpeechSequenceToken++;
-  const synth=mcSpeechEngine();
-  // Al pulsar otro botón, vacía una lectura anterior que pudiera haber quedado bloqueada.
-  try{
-    if(synth){
-      synth.cancel();
-      if(typeof synth.resume==='function')synth.resume();
-    }
-  }catch(error){console.warn('No se pudo preparar el audio:',error);}
   mcSpeechUtterance=null;
   return {token:mcSpeechSequenceToken};
 }
@@ -843,10 +837,10 @@ function mcPlayUtterance(text,lang,token,onend){
       mcSetSpeechStatus('No se pudo reproducir el audio ('+(event&&event.error?event.error:'error de Safari')+'). Vuelve a pulsar Escuchar.');
     }
   };
-  // Mantener speak() dentro del gesto del usuario; no usar setTimeout aquí.
-  try{if(typeof synth.resume==='function')synth.resume();}catch(error){console.warn(error);}
+  // Iniciar directamente desde el toque del usuario. No llamar cancel()
+  // antes de speak(): en iPhone Safari esa combinación puede dejarlo mudo.
+  try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
   synth.speak(utterance);
-  try{if(typeof synth.resume==='function')synth.resume();}catch(error){console.warn(error);}
 }
 function speak(t,lang='en-US'){
   const textToRead=String(t==null?'':t).trim();
@@ -891,7 +885,7 @@ function speakSequence(items){
       mcSpeechUtterance=utterance;
       synth.speak(utterance);
     });
-    try{if(typeof synth.resume==='function')synth.resume();}catch(error){console.warn(error);}
+    try{if(typeof synth.resume==='function' && synth.paused)synth.resume();}catch(error){console.warn(error);}
   }catch(error){
     console.error('Error en la secuencia de audio:',error);
     mcSetSpeechStatus('No se pudo reproducir el audio. Vuelve a pulsar Escuchar.');
